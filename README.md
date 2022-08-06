@@ -1,3 +1,5 @@
+[![GoDoc](https://godoc.org/github.com/unprofession-al/httpthings?status.svg)](https://godoc.org/github.com/unprofession-al/httpthings)
+
 # httpthings
 
 `httpthings` is a lose collection of thing I commonly use when building web servers. This is
