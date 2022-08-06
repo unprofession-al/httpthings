@@ -7,7 +7,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func Respond(res http.ResponseWriter, req *http.Request, code int, data interface{}) {
+// Auto reads the 'accept' request header and tries to respond automatically with the appropriate
+// 'content-type'. This currently works for 'text/yaml', everything else will be threaded as 'application/json'.
+func Auto(res http.ResponseWriter, req *http.Request, code int, data interface{}) {
 	var err error
 	var errMesg []byte
 	var out []byte
