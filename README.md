@@ -16,5 +16,5 @@ your things.
 | github.com/unprofession-al/httpthings/route   | Set up self-documenting HTTP routes                                       | 
 | github.com/unprofession-al/httpthings/run     | Start a HTTP server that runs as a real server or in a serverless fashion |
 
-To see a thing than makes use of all the things, see [example](/unprofession-al/httpthings/example).
+To see a thing than makes use of all the things, see [example](https://github.com/unprofession-al/httpthings/tree/master/example).
 
