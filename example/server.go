@@ -16,6 +16,7 @@ type Server struct {
 
 func NewServer(listener, static string) Server {
 	ts := NewTodoSet()
+	// Populate some initial tasks
 	ts.Add("Task1", "The Fist Task")
 	ts.Add("Task2", "The Second Task")
 
@@ -25,7 +26,7 @@ func NewServer(listener, static string) Server {
 		base:     "api",
 	}
 
-	r := mux.NewRouter().StrictSlash(true)
+	r := mux.NewRouter()
 
 	routes := s.routes()
 	routes.Populate(r, s.base)

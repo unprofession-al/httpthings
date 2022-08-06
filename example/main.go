@@ -6,30 +6,32 @@ import (
 	"os"
 )
 
-var app App
-
 type App struct {
 	listener string
 	static   string
 }
 
-func init() {
+func main() {
+	var app App
 	flag.StringVar(&app.listener, "listener", "0.0.0.0:8765", "ip/port to listen on")
 	flag.StringVar(&app.static, "static", "", "serve given dir as http root")
-}
-
-func main() {
 	flag.Parse()
 
 	s := NewServer(app.listener, app.static)
 	s.run()
 }
 
-func CheckIfError(err error) {
-	if err == nil {
-		return
+func exitOnErr(errs ...error) {
+	errNotNil := false
+	for _, err := range errs {
+		if err == nil {
+			continue
+		}
+		errNotNil = true
+		fmt.Fprintf(os.Stderr, "ERROR: %s", err.Error())
 	}
-
-	fmt.Printf("\x1b[31;1m%s\x1b[0m\n", fmt.Sprintf("error: %s", err))
-	os.Exit(1)
+	if errNotNil {
+		fmt.Print("\n")
+		os.Exit(-1)
+	}
 }

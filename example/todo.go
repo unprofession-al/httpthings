@@ -6,6 +6,14 @@ func NewTodoSet() *TodoSet {
 	return &TodoSet{}
 }
 
+func (ts TodoSet) AsSlice() []*Todo {
+	out := []*Todo{}
+	for _, v := range ts {
+		out = append(out, v)
+	}
+	return out
+}
+
 func (ts TodoSet) Add(n, d string) bool {
 	if _, found := ts[n]; found {
 		return false

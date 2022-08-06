@@ -4,12 +4,12 @@ import r "github.com/unprofession-al/httpthings/route"
 
 func (s Server) params() map[string]*r.QueryParam {
 	return map[string]*r.QueryParam{
-		"format": &r.QueryParam{
+		"format": {
 			N:    "f",
 			D:    "json",
 			Desc: "format of the output, can be 'yaml' or 'json'",
 		},
-		"name": &r.QueryParam{
+		"name": {
 			N:    "n",
 			D:    "",
 			Desc: "name of the todo",
