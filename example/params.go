@@ -1,22 +1,37 @@
 package main
 
-import r "github.com/unprofession-al/httpthings/route"
+import (
+	"net/http"
 
-func (s Server) params() map[string]*r.QueryParam {
-	return map[string]*r.QueryParam{
+	r "github.com/unprofession-al/httpthings/route"
+)
+
+func (s Server) params() map[string]*r.Parameter {
+	formatDefault := "json"
+	return map[string]*r.Parameter{
 		"format": {
-			N:    "f",
-			D:    "json",
-			Desc: "format of the output, can be 'yaml' or 'json'",
+			Name:     "Accept",
+			Default:  &formatDefault,
+			Location: r.LocationHeader,
+			Desc:     "format of the output, can be 'yaml' or 'json'",
 		},
 		"name": {
-			N:    "n",
-			D:    "",
-			Desc: "name of the todo",
+			Name:     "name",
+			Location: r.LocationPath,
+			Default:  nil,
+			Desc:     "name of the todo",
 		},
 	}
 }
 
-func (s Server) param(name string) *r.QueryParam {
+func (s Server) getParam(name string) *r.Parameter {
 	return s.params()[name]
+}
+
+func (s Server) extractParam(name string, r *http.Request) (string, bool) {
+	param, ok := s.params()[name]
+	if !ok {
+		return "", false
+	}
+	return param.First(r)
 }

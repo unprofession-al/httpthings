@@ -6,25 +6,38 @@ import (
 
 func (s Server) routes() r.Route {
 	return r.Route{
-		R: r.Routes{
-			"openapi.html": {
-				H: r.Handlers{"GET": r.Handler{F: s.OpenAPIHandler, Q: []*r.QueryParam{s.param("format")}}},
+		Routes: map[string]r.Route{
+			"openapi": {
+				Get: &r.Handler{
+					Func:       s.OpenAPIHandler,
+					Parameters: []*r.Parameter{s.getParam("format")},
+				},
 			},
 			"todos": {
-				H: r.Handlers{
-					"GET": r.Handler{F: s.ListTodosHandler, Q: []*r.QueryParam{s.param("format")}},
-					"POST": r.Handler{
-						F:   s.AddTodoHandler,
-						Q:   []*r.QueryParam{s.param("format")},
-						Req: Todo{},
-						Res: Todo{},
+				Get: &r.Handler{
+					Func: s.ListTodosHandler,
+					Responses: map[string]interface{}{
+						"200": []Todo{},
+					},
+					Parameters: []*r.Parameter{s.getParam("format")},
+				},
+				Post: &r.Handler{
+					Func:        s.AddTodoHandler,
+					Parameters:  []*r.Parameter{s.getParam("format")},
+					RequestBody: Todo{},
+					Responses: map[string]interface{}{
+						"200": Todo{},
 					},
 				},
-				R: r.Routes{
-					"{todo}": {
-						H: r.Handlers{
-							"GET": r.Handler{F: s.ShowTodoHandler, Q: []*r.QueryParam{s.param("format")}},
-							"PUT": r.Handler{F: s.FinishTodoHandler, Q: []*r.QueryParam{s.param("format")}},
+				Routes: map[string]r.Route{
+					"{name}": {
+						Get: &r.Handler{
+							Func:       s.ShowTodoHandler,
+							Parameters: []*r.Parameter{s.getParam("format")},
+						},
+						Put: &r.Handler{
+							Func:       s.FinishTodoHandler,
+							Parameters: []*r.Parameter{s.getParam("format")},
 						},
 					},
 				},

@@ -5,38 +5,60 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gorilla/mux"
 )
 
 type Route struct {
-	H Handlers `json:"handlers" yaml:"handlers"`
-	R Routes   `json:"routes" yaml:"routes"`
+	Connect *Handler
+	Delete  *Handler
+	Get     *Handler
+	Head    *Handler
+	Options *Handler
+	Patch   *Handler
+	Post    *Handler
+	Put     *Handler
+	Trace   *Handler
+	Routes  map[string]Route
+}
+
+func (r Route) asPathItem(base string) *openapi3.PathItem {
+	out := &openapi3.PathItem{}
+	return out
 }
 
 func (r Route) Populate(router *mux.Router, base string) {
 	base = fmt.Sprintf("/%s/", strings.Trim(base, "/"))
 
-	if strings.HasSuffix(base, "*/") {
-		base = strings.TrimSuffix(base, "*/")
-		for m, h := range r.H {
-			f := h.F
-			if f == nil {
-				f = notImplemented
-			}
-			router.PathPrefix(base).HandlerFunc(f).Methods(m)
-		}
-		return
+	if r.Connect != nil {
+		r.Connect.append(router, base, "CONNECT")
+	}
+	if r.Delete != nil {
+		r.Delete.append(router, base, "DELETE")
+	}
+	if r.Get != nil {
+		r.Get.append(router, base, "GET")
+	}
+	if r.Head != nil {
+		r.Head.append(router, base, "HEAD")
+	}
+	if r.Options != nil {
+		r.Options.append(router, base, "OPTIONS")
+	}
+	if r.Patch != nil {
+		r.Patch.append(router, base, "PATCH")
+	}
+	if r.Post != nil {
+		r.Post.append(router, base, "POST")
+	}
+	if r.Put != nil {
+		r.Put.append(router, base, "PUT")
+	}
+	if r.Trace != nil {
+		r.Trace.append(router, base, "TRACE")
 	}
 
-	for m, h := range r.H {
-		f := h.F
-		if f == nil {
-			f = notImplemented
-		}
-		router.Path(base).Methods(m).Handler(f)
-	}
-
-	for path, route := range r.R {
+	for path, route := range r.Routes {
 		path = fmt.Sprintf("%s%s/", base, strings.Trim(path, "/"))
 		route.Populate(router, path)
 	}
@@ -46,37 +68,4 @@ func notImplemented(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusNotImplemented)
 	out := "Not Yet Implemented\n"
 	res.Write([]byte(out))
-}
-
-type Routes map[string]Route
-
-type Handler struct {
-	Q   []*QueryParam    `json:"query_params" yaml:"query_params"`
-	D   string           `json:"description" yaml:"description"`
-	Req interface{}      `json:"request" yaml:"request"`
-	Res interface{}      `json:"response" yaml:"response"`
-	F   http.HandlerFunc `json:"-" yaml:"-"`
-}
-
-type Handlers map[string]Handler
-
-type QueryParam struct {
-	N    string      `json:"name" yaml:"name"`
-	D    string      `json:"default" yaml:"default"`
-	Desc string      `json:"description" yaml:"description"`
-	C    interface{} `json:"-" yaml:"-"`
-}
-
-func (q QueryParam) Get(r *http.Request) []string {
-	values := r.URL.Query()[q.N]
-	if len(values) < 1 && q.D != "" {
-		values = append(values, q.D)
-	}
-	return values
-}
-
-func (q QueryParam) First(r *http.Request) string {
-	values := r.URL.Query()[q.N]
-	values = append(values, q.D)
-	return values[0]
 }
