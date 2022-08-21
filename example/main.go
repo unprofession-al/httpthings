@@ -17,7 +17,8 @@ func main() {
 	flag.StringVar(&app.static, "static", "", "serve given dir as http root")
 	flag.Parse()
 
-	s := NewServer(app.listener, app.static)
+	s, err := NewServer(app.listener, app.static)
+	exitOnErr(err)
 	s.run()
 }
 

@@ -14,7 +14,7 @@ type Server struct {
 	todos    TodoSet
 }
 
-func NewServer(listener, static string) Server {
+func NewServer(listener, static string) (Server, error) {
 	ts := NewTodoSet()
 	// Populate some initial tasks
 	ts.Add("Task1", "The Fist Task")
@@ -29,14 +29,17 @@ func NewServer(listener, static string) Server {
 	r := mux.NewRouter()
 
 	routes := s.routes()
-	routes.Populate(r, s.base)
+	err := routes.Populate(r, s.base)
+	if err != nil {
+		return s, err
+	}
 
 	if static != "" {
 		r.PathPrefix("/").Handler(http.FileServer(http.Dir(static)))
 	}
 
 	s.handler = r
-	return s
+	return s, nil
 }
 
 func (s Server) run() {
