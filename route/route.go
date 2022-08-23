@@ -5,18 +5,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gorilla/mux"
 )
 
 type Route struct {
-	Handlers map[string]*Handler
+	Handlers map[string]*Endpoint
 	Routes   map[string]Route
-}
-
-func (r Route) asPathItem(base string) *openapi3.PathItem {
-	out := &openapi3.PathItem{}
-	return out
 }
 
 func (r Route) Populate(router *mux.Router, base string) error {
@@ -38,7 +32,7 @@ func (r Route) Populate(router *mux.Router, base string) error {
 	return err
 }
 
-func notImplemented() http.HandlerFunc {
+func notImplemented(e Endpoint) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusNotImplemented)
 		out := "Not Yet Implemented\n"
@@ -46,7 +40,7 @@ func notImplemented() http.HandlerFunc {
 	}
 }
 
-func checkHTTPVerbs(h map[string]*Handler) error {
+func checkHTTPVerbs(h map[string]*Endpoint) error {
 	allowed := []string{
 		http.MethodGet,
 		http.MethodHead,

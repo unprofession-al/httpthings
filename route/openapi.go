@@ -10,7 +10,7 @@ import (
 func (r Route) getPathItems(base string) openapi3.Paths {
 	docs := openapi3.Paths{}
 	base = fmt.Sprintf("/%s/", strings.Trim(base, "/"))
-	docs[base] = r.asPathItem(base)
+	docs[base] = &openapi3.PathItem{}
 
 	for path, route := range r.Routes {
 		path = fmt.Sprintf("%s%s/", base, strings.Trim(path, "/"))

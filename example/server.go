@@ -10,7 +10,7 @@ import (
 type Server struct {
 	listener string
 	base     string
-	handler  http.Handler
+	handler  *mux.Router
 	todos    TodoSet
 }
 
