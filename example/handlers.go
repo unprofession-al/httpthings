@@ -57,7 +57,7 @@ func (s Server) ShowTodoHandler(e route.Endpoint) http.HandlerFunc {
 
 func (s Server) AddTodoHandler(e route.Endpoint) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		todo := e.RequestBody
+		todo := &Todo{}
 		b, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			respond.Auto(res, req, http.StatusInternalServerError, "could not read request body")
