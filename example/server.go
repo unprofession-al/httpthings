@@ -17,8 +17,14 @@ type Server struct {
 func NewServer(listener, static string) (Server, error) {
 	ts := NewTodoSet()
 	// Populate some initial tasks
-	ts.Add("Task1", "The Fist Task")
-	ts.Add("Task2", "The Second Task")
+	ts.Add(&Todo{
+		Name:        "Task1",
+		Description: "The First Task",
+	})
+	ts.Add(&Todo{
+		Name:        "Task2",
+		Description: "The Second Task",
+	})
 
 	s := Server{
 		listener: listener,

@@ -6,13 +6,15 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/invopop/jsonschema"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 type Endpoint struct {
 	Parameters  []*Parameter                    `json:"query_params" yaml:"query_params"`
 	Desc        string                          `json:"description" yaml:"description"`
-	RequestBody interface{}                     `json:"request" yaml:"request"`
-	Responses   map[string]interface{}          `json:"response" yaml:"response"`
+	RequestBody *jsonschema.Schema              `json:"request" yaml:"request"`
+	Responses   map[string]*jsonschema.Schema   `json:"response" yaml:"response"`
 	HandlerFunc func(Endpoint) http.HandlerFunc `json:"-" yaml:"-"`
 }
 
@@ -49,4 +51,14 @@ func (e Endpoint) GetParams(r *http.Request) (map[string][]string, []error) {
 	}
 
 	return out, errs
+}
+
+func (e Endpoint) ValidateRequestBody(document []byte) (*gojsonschema.Result, error) {
+	schema, err := e.RequestBody.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	schemaLoader := gojsonschema.NewBytesLoader(schema)
+	documentLoader := gojsonschema.NewBytesLoader(document)
+	return gojsonschema.Validate(schemaLoader, documentLoader)
 }

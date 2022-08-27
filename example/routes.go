@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/invopop/jsonschema"
 	r "github.com/unprofession-al/httpthings/route"
 )
 
@@ -27,17 +28,17 @@ func (s Server) routes() r.Route {
 				Handlers: map[string]*r.Endpoint{
 					"GET": {
 						HandlerFunc: s.ListTodosHandler,
-						Responses: map[string]interface{}{
-							"200": []Todo{},
+						Responses: map[string]*jsonschema.Schema{
+							"200": jsonschema.Reflect([]Todo{}),
 						},
 						Parameters: []*r.Parameter{s.getParam("format")},
 					},
 					"POST": {
 						HandlerFunc: s.AddTodoHandler,
 						Parameters:  []*r.Parameter{s.getParam("format")},
-						RequestBody: Todo{},
-						Responses: map[string]interface{}{
-							"200": Todo{},
+						RequestBody: jsonschema.Reflect(TodoRequest{}),
+						Responses: map[string]*jsonschema.Schema{
+							"200": jsonschema.Reflect(Todo{}),
 						},
 					},
 				},

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/invopop/jsonschema"
 	"github.com/unprofession-al/httpthings/respond"
 	"github.com/unprofession-al/httpthings/route"
 )
@@ -25,9 +26,13 @@ func (s Server) ListTodosHandler(e route.Endpoint) http.HandlerFunc {
 
 func (s Server) TestHandler(e route.Endpoint) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		currentURL := req.URL.String()
-		currentMethod := req.Method
-		respond.Auto(res, req, http.StatusOK, currentURL+currentMethod)
+		schema := jsonschema.Reflect(Todo{})
+		out, err := schema.MarshalJSON()
+		if err != nil {
+			respond.Auto(res, req, http.StatusInternalServerError, err)
+			return
+		}
+		respond.Raw(res, http.StatusOK, out)
 	}
 }
 
@@ -57,7 +62,7 @@ func (s Server) ShowTodoHandler(e route.Endpoint) http.HandlerFunc {
 
 func (s Server) AddTodoHandler(e route.Endpoint) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		todo := &Todo{}
+		todo := &TodoRequest{}
 		b, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			respond.Auto(res, req, http.StatusInternalServerError, "could not read request body")
@@ -68,11 +73,24 @@ func (s Server) AddTodoHandler(e route.Endpoint) http.HandlerFunc {
 			respond.Auto(res, req, http.StatusNotAcceptable, "could not unmarshal data")
 			return
 		}
+		valRes, err := e.ValidateRequestBody(b)
+		if err != nil {
+			respond.Auto(res, req, http.StatusInternalServerError, "could not validate Request body")
+			return
+		}
+		if !valRes.Valid() {
+			errDesc := "The request body is not valid. Errors are: "
+			for _, desc := range valRes.Errors() {
+				errDesc += desc.String() + "... "
+			}
+			respond.Auto(res, req, http.StatusNotAcceptable, errDesc)
+			return
+		}
 		if _, found := s.todos[todo.Name]; found {
 			respond.Auto(res, req, http.StatusConflict, todo)
 			return
 		}
-		s.todos.Add(todo.Name, todo.Description)
+		s.todos.Add(todo.AsTodo())
 		respond.Auto(res, req, http.StatusOK, todo)
 	}
 }
