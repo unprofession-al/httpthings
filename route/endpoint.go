@@ -12,6 +12,7 @@ import (
 
 type Endpoint struct {
 	Parameters  []*Parameter                    `json:"query_params" yaml:"query_params"`
+	Name        string                          `json:"name" yaml:"name"`
 	Desc        string                          `json:"description" yaml:"description"`
 	RequestBody *jsonschema.Schema              `json:"request" yaml:"request"`
 	Responses   map[string]*jsonschema.Schema   `json:"response" yaml:"response"`
