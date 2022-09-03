@@ -1,62 +1,50 @@
 package main
 
 import (
-	"github.com/invopop/jsonschema"
+	"net/http"
+
 	r "github.com/unprofession-al/httpthings/route"
 )
 
-func (s Server) routes() r.Route {
-	return r.Route{
-		Routes: map[string]r.Route{
+func (s Server) routeConfig() r.RouteConfig {
+	return r.RouteConfig{
+		Routes: map[string]r.RouteConfig{
 			"test": {
-				Handlers: map[string]*r.Endpoint{
-					"GET": {
+				Endpoints: map[string]r.Endpoint{
+					http.MethodGet: {
 						HandlerFunc: s.TestHandler,
-						Parameters:  []*r.Parameter{s.getParam("format")},
-					},
-				},
-			},
-			"openapi": {
-				Handlers: map[string]*r.Endpoint{
-					"GET": {
-						HandlerFunc: s.OpenAPIHandler,
-						Parameters:  []*r.Parameter{s.getParam("format")},
 					},
 				},
 			},
 			"todos": {
-				Handlers: map[string]*r.Endpoint{
-					"GET": {
+				Endpoints: map[string]r.Endpoint{
+					http.MethodGet: {
 						HandlerFunc: s.ListTodosHandler,
-						Responses: map[string]*jsonschema.Schema{
-							"200": jsonschema.Reflect([]Todo{}),
+						Responses: map[int]interface{}{
+							http.StatusOK: []Todo{},
 						},
-						Parameters: []*r.Parameter{s.getParam("format")},
 					},
-					"POST": {
+					http.MethodPost: {
 						HandlerFunc: s.AddTodoHandler,
-						Parameters:  []*r.Parameter{s.getParam("format")},
-						RequestBody: jsonschema.Reflect(TodoRequest{}),
-						Responses: map[string]*jsonschema.Schema{
-							"200": jsonschema.Reflect(Todo{}),
+						RequestBody: TodoRequest{},
+						Responses: map[int]interface{}{
+							http.StatusOK: Todo{},
 						},
 					},
 				},
-				Routes: map[string]r.Route{
-					"{name}": {
-						Handlers: map[string]*r.Endpoint{
-							"GET": {
+				Routes: map[string]r.RouteConfig{
+					"{name | Name of the Todo to filter}": {
+						Endpoints: map[string]r.Endpoint{
+							http.MethodGet: {
 								HandlerFunc: s.ShowTodoHandler,
-								Parameters: []*r.Parameter{
-									s.getParam("format"),
-									s.getParam("name"),
+								Responses: map[int]interface{}{
+									http.StatusOK: Todo{},
 								},
 							},
-							"PUT": {
+							http.MethodPut: {
 								HandlerFunc: s.FinishTodoHandler,
-								Parameters: []*r.Parameter{
-									s.getParam("format"),
-									s.getParam("name"),
+								Responses: map[int]interface{}{
+									http.StatusOK: Todo{},
 								},
 							},
 						},

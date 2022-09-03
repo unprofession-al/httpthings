@@ -11,11 +11,8 @@ import (
 	"github.com/unprofession-al/httpthings/route"
 )
 
-func (s Server) OpenAPIHandler(e route.Endpoint) http.HandlerFunc {
-	return func(res http.ResponseWriter, req *http.Request) {
-		out := s.routes().Doc(s.base)
-		respond.Auto(res, req, http.StatusOK, out)
-	}
+func (s *Server) OpenAPIHandler(res http.ResponseWriter, req *http.Request) {
+	respond.Auto(res, req, http.StatusOK, s.spec)
 }
 
 func (s Server) ListTodosHandler(e route.Endpoint) http.HandlerFunc {
@@ -71,19 +68,6 @@ func (s Server) AddTodoHandler(e route.Endpoint) http.HandlerFunc {
 		err = json.Unmarshal(b, &todo)
 		if err != nil {
 			respond.Auto(res, req, http.StatusNotAcceptable, "could not unmarshal data")
-			return
-		}
-		valRes, err := e.ValidateRequestBody(b)
-		if err != nil {
-			respond.Auto(res, req, http.StatusInternalServerError, "could not validate Request body")
-			return
-		}
-		if !valRes.Valid() {
-			errDesc := "The request body is not valid. Errors are: "
-			for _, desc := range valRes.Errors() {
-				errDesc += desc.String() + "... "
-			}
-			respond.Auto(res, req, http.StatusNotAcceptable, errDesc)
 			return
 		}
 		if _, found := s.todos[todo.Name]; found {

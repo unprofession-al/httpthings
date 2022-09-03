@@ -8,28 +8,65 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Route struct {
-	Handlers map[string]*Endpoint
-	Routes   map[string]Route
+type RouteConfig struct {
+	Endpoints map[string]Endpoint
+	Routes    map[string]RouteConfig
 }
 
-func (r Route) Populate(router *mux.Router, base string) error {
+type Routes []Route
+
+func NewRoutes(c RouteConfig, base string) (Routes, error) {
 	base = fmt.Sprintf("/%s/", strings.Trim(base, "/"))
+	return expandRoutes(c, base)
+}
 
-	err := checkHTTPVerbs(r.Handlers)
+func expandRoutes(c RouteConfig, path string) (Routes, error) {
+	r := []Route{}
+	tidyPath, pathParams := tidyPath(path)
+	path = tidyPath
+	err := checkHTTPVerbs(c.Endpoints)
 	if err != nil {
-		return err
+		return r, err
 	}
+	for m, ep := range c.Endpoints {
+		ep.Parameters = append(ep.Parameters, pathParams...)
+		route := Route{
+			Method:   strings.ToUpper(m),
+			Path:     path,
+			Endpoint: ep,
+		}
+		r = append(r, route)
+	}
+	for subpath, route := range c.Routes {
+		path = fmt.Sprintf("%s%s/", path, strings.Trim(subpath, "/"))
+		routes, err := expandRoutes(route, path)
+		if err != nil {
+			return r, err
+		}
+		r = append(r, routes...)
+	}
+	return r, err
+}
 
-	for verb, handler := range r.Handlers {
-		handler.append(router, base, strings.ToUpper(verb))
-	}
+type Route struct {
+	Method   string
+	Path     string
+	Endpoint Endpoint
+}
 
-	for path, route := range r.Routes {
-		path = fmt.Sprintf("%s%s/", base, strings.Trim(path, "/"))
-		err = route.Populate(router, path)
+func (r Routes) PopulateRouter(router *mux.Router) {
+	for _, route := range r {
+		path := route.Path
+		f := route.Endpoint.HandlerFunc
+		if f == nil {
+			f = notImplemented
+		}
+		if strings.HasSuffix(path, "*/") {
+			path = strings.TrimSuffix(path, "*/")
+			router.PathPrefix(path).HandlerFunc(f(route.Endpoint)).Methods(route.Method)
+		}
+		router.Path(path).HandlerFunc(f(route.Endpoint)).Methods(route.Method)
 	}
-	return err
 }
 
 func notImplemented(e Endpoint) http.HandlerFunc {
@@ -40,7 +77,7 @@ func notImplemented(e Endpoint) http.HandlerFunc {
 	}
 }
 
-func checkHTTPVerbs(h map[string]*Endpoint) error {
+func checkHTTPVerbs(h map[string]Endpoint) error {
 	allowed := []string{
 		http.MethodGet,
 		http.MethodHead,

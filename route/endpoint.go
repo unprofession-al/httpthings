@@ -3,39 +3,39 @@ package route
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/invopop/jsonschema"
-	"github.com/xeipuuv/gojsonschema"
 )
 
 type Endpoint struct {
-	Parameters  []*Parameter                    `json:"query_params" yaml:"query_params"`
+	Parameters  []Parameter                     `json:"query_params" yaml:"query_params"`
 	Name        string                          `json:"name" yaml:"name"`
-	Desc        string                          `json:"description" yaml:"description"`
-	RequestBody *jsonschema.Schema              `json:"request" yaml:"request"`
-	Responses   map[string]*jsonschema.Schema   `json:"response" yaml:"response"`
+	Desciption  string                          `json:"description" yaml:"description"`
+	RequestBody interface{}                     `json:"request" yaml:"request"`
+	Responses   map[int]interface{}             `json:"response" yaml:"response"`
 	HandlerFunc func(Endpoint) http.HandlerFunc `json:"-" yaml:"-"`
 }
 
-func (e Endpoint) append(router *mux.Router, path, method string) (isCatchAll bool) {
+func (e *Endpoint) append(router *mux.Router, path, method string) (isCatchAll bool) {
+	method = strings.ToUpper(method)
+	_, pathParams := tidyPath(path)
+	e.Parameters = append(e.Parameters, pathParams...)
 	if strings.HasSuffix(path, "*/") {
 		path = strings.TrimSuffix(path, "*/")
-
 		f := e.HandlerFunc
 		if f == nil {
 			f = notImplemented
 		}
-		router.PathPrefix(path).HandlerFunc(f(e)).Methods(method)
+		router.PathPrefix(path).HandlerFunc(f(*e)).Methods(method)
 		return true
 	}
-
 	f := e.HandlerFunc
 	if f == nil {
 		f = notImplemented
 	}
-	router.Path(path).HandlerFunc(f(e)).Methods(method)
+	router.Path(path).HandlerFunc(f(*e)).Methods(method)
 	return false
 }
 
@@ -54,12 +54,31 @@ func (e Endpoint) GetParams(r *http.Request) (map[string][]string, []error) {
 	return out, errs
 }
 
-func (e Endpoint) ValidateRequestBody(document []byte) (*gojsonschema.Result, error) {
-	schema, err := e.RequestBody.MarshalJSON()
-	if err != nil {
-		return nil, err
+func tidyPath(path string) (tidy string, params []Parameter) {
+	tidy = path
+	rex := regexp.MustCompile(`\{(?P<param>.*)\}`)
+	matches := rex.FindAllStringSubmatch(path, -1)
+	for _, param := range matches {
+		if len(param) < 2 {
+			continue
+		}
+		whole := param[0]
+		pair := strings.SplitN(param[1], "|", 2)
+		key := strings.TrimSpace(pair[0])
+		desc := key
+		if len(pair) == 2 {
+			desc = strings.TrimSpace(pair[1])
+		}
+		tidy = strings.ReplaceAll(tidy, whole, fmt.Sprintf("{%s}", key))
+		p := Parameter{
+			Name:        key,
+			Location:    LocationPath,
+			Required:    true,
+			Default:     nil,
+			Description: desc,
+			Content:     "string",
+		}
+		params = append(params, p)
 	}
-	schemaLoader := gojsonschema.NewBytesLoader(schema)
-	documentLoader := gojsonschema.NewBytesLoader(document)
-	return gojsonschema.Validate(schemaLoader, documentLoader)
+	return
 }

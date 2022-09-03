@@ -8,11 +8,12 @@ import (
 )
 
 type Parameter struct {
-	Name     string   `json:"name" yaml:"name"`
-	Location Location `json:"location" yaml:"location"`
-	Required bool     `json:"required" yaml:"required"`
-	Default  *string  `json:"default" yaml:"default"`
-	Desc     string   `json:"description" yaml:"description"`
+	Name        string   `json:"name" yaml:"name"`
+	Location    Location `json:"location" yaml:"location"`
+	Required    bool     `json:"required" yaml:"required"`
+	Default     *string  `json:"default" yaml:"default"`
+	Description string   `json:"description" yaml:"description"`
+	Content     string   `json:"content" yaml:"content"`
 }
 
 func (p Parameter) Get(r *http.Request) ([]string, bool) {
