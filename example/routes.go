@@ -9,13 +9,6 @@ import (
 func (s Server) routeConfig() r.RouteConfig {
 	return r.RouteConfig{
 		Routes: map[string]r.RouteConfig{
-			"test": {
-				Endpoints: map[string]r.Endpoint{
-					http.MethodGet: {
-						HandlerFunc: s.TestHandler,
-					},
-				},
-			},
 			"todos": {
 				Endpoints: map[string]r.Endpoint{
 					http.MethodGet: {

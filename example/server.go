@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -70,6 +71,7 @@ func (s *Server) GenerateOpenAPI(r route.Routes) {
 		ContactEmail:   "noreply@unprofession.al",
 		LicenseName:    "The MIT License",
 		LicenseURL:     "https://mit-license.org/",
+		ServerURL:      fmt.Sprintf("http://%s", s.listener),
 	}
 	s.spec = openapi.New(c, r, s.base)
 }

@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/invopop/jsonschema"
 	"github.com/unprofession-al/httpthings/respond"
 	"github.com/unprofession-al/httpthings/route"
 )
@@ -18,18 +17,6 @@ func (s *Server) OpenAPIHandler(res http.ResponseWriter, req *http.Request) {
 func (s Server) ListTodosHandler(e route.Endpoint) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		respond.Auto(res, req, http.StatusOK, s.todos.AsSlice())
-	}
-}
-
-func (s Server) TestHandler(e route.Endpoint) http.HandlerFunc {
-	return func(res http.ResponseWriter, req *http.Request) {
-		schema := jsonschema.Reflect(Todo{})
-		out, err := schema.MarshalJSON()
-		if err != nil {
-			respond.Auto(res, req, http.StatusInternalServerError, err)
-			return
-		}
-		respond.Raw(res, http.StatusOK, out)
 	}
 }
 

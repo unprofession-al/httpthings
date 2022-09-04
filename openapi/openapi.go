@@ -39,7 +39,7 @@ type license struct {
 
 type server struct {
 	URL         string `json:"url" yaml:"url"`
-	Description string `json:"description" yaml:"description"`
+	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 	// Variables serverVariablen
 }
 
@@ -134,7 +134,6 @@ type response struct {
 
 func (g *generator) newResponse(code int, in interface{}) response {
 	tSchema := jsonschema.Reflect(in)
-	fmt.Println(tSchema.Type)
 	tRef := ""
 	for name, def := range tSchema.Definitions {
 		tRef = fmt.Sprintf("#/components/schemas/%s", name)
@@ -162,7 +161,6 @@ func (g *generator) newRequest(in interface{}) *request {
 		return nil
 	}
 	tSchema := jsonschema.Reflect(in)
-	fmt.Println(tSchema.Type)
 	tRef := ""
 	for name, def := range tSchema.Definitions {
 		tRef = fmt.Sprintf("#/components/schemas/%s", name)

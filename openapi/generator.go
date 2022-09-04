@@ -8,15 +8,17 @@ import (
 )
 
 type Config struct {
-	Title          string
-	Version        string
-	Description    string
-	TermsOfService string
-	ContactName    string
-	ContactURL     string
-	ContactEmail   string
-	LicenseName    string
-	LicenseURL     string
+	Title             string
+	Version           string
+	Description       string
+	TermsOfService    string
+	ContactName       string
+	ContactURL        string
+	ContactEmail      string
+	LicenseName       string
+	LicenseURL        string
+	ServerURL         string
+	ServerDescription string
 }
 
 type generator struct {
@@ -44,6 +46,12 @@ func New(c Config, r route.Routes, base string) *Spec {
 				},
 			},
 			Paths: paths{},
+			Servers: []server{
+				{
+					URL:         c.ServerURL,
+					Description: c.ServerDescription,
+				},
+			},
 		},
 		schemas: jsonschema.Definitions{},
 	}
