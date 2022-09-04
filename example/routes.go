@@ -44,6 +44,16 @@ func (s Server) routeConfig() r.RouteConfig {
 					},
 				},
 			},
+			"info": {
+				Endpoints: map[string]r.Endpoint{
+					http.MethodGet: {
+						HandlerFunc: s.InfoHandler,
+						Responses: map[int]interface{}{
+							http.StatusOK: "this is a service",
+						},
+					},
+				},
+			},
 		},
 	}
 }

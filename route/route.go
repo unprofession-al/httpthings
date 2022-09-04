@@ -37,9 +37,9 @@ func expandRoutes(c RouteConfig, path string) (Routes, error) {
 		}
 		r = append(r, route)
 	}
-	for subpath, route := range c.Routes {
-		path = fmt.Sprintf("%s%s/", path, strings.Trim(subpath, "/"))
-		routes, err := expandRoutes(route, path)
+	for p, route := range c.Routes {
+		subpath := fmt.Sprintf("%s%s/", path, strings.Trim(p, "/"))
+		routes, err := expandRoutes(route, subpath)
 		if err != nil {
 			return r, err
 		}

@@ -90,3 +90,9 @@ func (s Server) FinishTodoHandler(e route.Endpoint) http.HandlerFunc {
 		respond.Auto(res, req, http.StatusNotFound, "not found")
 	}
 }
+
+func (s Server) InfoHandler(e route.Endpoint) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		respond.Auto(res, req, http.StatusOK, e.Responses[http.StatusOK])
+	}
+}
