@@ -15,7 +15,7 @@ type Server struct {
 	base     string
 	handler  *mux.Router
 	todos    TodoSet
-	spec     *openapi.Spec
+	spec     openapi.Spec
 }
 
 func NewServer(listener, static string) (Server, error) {

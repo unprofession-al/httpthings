@@ -1,7 +1,6 @@
 package openapi
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/invopop/jsonschema"
@@ -22,51 +21,43 @@ type Config struct {
 	ServerDescription string
 }
 
-type generator struct {
-	spec    *Spec
-	schemas []*jsonschema.Schema
-}
-
-func New(c Config, r route.Routes, base string) *Spec {
-	fmt.Println("NewSpec")
-	g := &generator{
-		spec: &Spec{
-			OpenAPI: "3.0.3",
-			Info: info{
-				Title:          c.Title,
-				Version:        c.Version,
-				Description:    c.Description,
-				TermsOfService: c.TermsOfService,
-				Contact: contact{
-					Name:  c.ContactName,
-					URL:   c.ContactURL,
-					Email: c.ContactEmail,
-				},
-				License: license{
-					Name: c.LicenseName,
-					URL:  c.LicenseURL,
-				},
+func New(c Config, r route.Routes, base string) Spec {
+	spec := Spec{
+		OpenAPI: "3.0.3",
+		Info: info{
+			Title:          c.Title,
+			Version:        c.Version,
+			Description:    c.Description,
+			TermsOfService: c.TermsOfService,
+			Contact: contact{
+				Name:  c.ContactName,
+				URL:   c.ContactURL,
+				Email: c.ContactEmail,
 			},
-			Paths: paths{},
-			Servers: []server{
-				{
-					URL:         c.ServerURL,
-					Description: c.ServerDescription,
-				},
+			License: license{
+				Name: c.LicenseName,
+				URL:  c.LicenseURL,
+			},
+		},
+		Paths: paths{},
+		Servers: []server{
+			{
+				URL:         c.ServerURL,
+				Description: c.ServerDescription,
 			},
 		},
 	}
 	schemas := []*jsonschema.Schema{}
 	for _, route := range r {
-		if _, ok := g.spec.Paths[route.Path]; !ok {
-			g.spec.Paths[route.Path] = endpoints{}
+		if _, ok := spec.Paths[route.Path]; !ok {
+			spec.Paths[route.Path] = endpoints{}
 		}
 		epSchemas := []*jsonschema.Schema{}
-		g.spec.Paths[route.Path][strings.ToLower(route.Method)], epSchemas = newEndpoint(route.Endpoint)
+		spec.Paths[route.Path][strings.ToLower(route.Method)], epSchemas = newEndpoint(route.Endpoint)
 		schemas = append(schemas, epSchemas...)
 	}
 	defs := jsonschema.Definitions{}
-	for _, schema := range g.schemas {
+	for _, schema := range schemas {
 		if schema == nil || schema.Definitions == nil {
 			continue
 		}
@@ -74,6 +65,6 @@ func New(c Config, r route.Routes, base string) *Spec {
 			defs[key] = def
 		}
 	}
-	g.spec.Components.Schemas = defs
-	return g.spec
+	spec.Components.Schemas = defs
+	return spec
 }
