@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/invopop/jsonschema"
@@ -27,6 +28,7 @@ type generator struct {
 }
 
 func New(c Config, r route.Routes, base string) *Spec {
+	fmt.Println("NewSpec")
 	g := &generator{
 		spec: &Spec{
 			OpenAPI: "3.0.3",
