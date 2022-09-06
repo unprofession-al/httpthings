@@ -135,6 +135,7 @@ func newResponses(in map[int]interface{}) (responses, []*jsonschema.Schema) {
 	if len(in) == 0 {
 		code := http.StatusOK
 		resp, schema := newResponse(code, "")
+		fmt.Println(schema)
 		schemas = append(schemas, schema)
 		out[fmt.Sprint(code)] = *resp
 	}
