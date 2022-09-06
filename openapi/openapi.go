@@ -1,9 +1,12 @@
 package openapi
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/invopop/jsonschema"
 	"github.com/unprofession-al/httpthings/route"
@@ -15,6 +18,13 @@ type Spec struct {
 	Servers    []server   `json:"servers,omitempty" yaml:"servers,omitempty"`
 	Paths      paths      `json:"paths" yaml:"paths"`
 	Components components `json:"components" yaml:"components"`
+}
+
+func (s *Spec) AsJSON() ([]byte, error) {
+	out, err := json.MarshalIndent(s, "", "  ")
+	out = bytes.ReplaceAll(out, []byte("#/$defs/"), []byte("#/components/schemas/"))
+	return out, err
+
 }
 
 type info struct {
@@ -55,7 +65,7 @@ type endpoint struct {
 	Parameters  []parameter         `json:"parameters,omitempty" yaml:"parameters,omitempty"`
 }
 
-func (g *generator) newEndpoint(e route.Endpoint) endpoint {
+func newEndpoint(e route.Endpoint) (endpoint, []*jsonschema.Schema) {
 	params := []parameter{}
 	for _, p := range e.Parameters {
 		param := parameter{
@@ -67,13 +77,16 @@ func (g *generator) newEndpoint(e route.Endpoint) endpoint {
 		}
 		params = append(params, param)
 	}
+	body, bSchema := newRequest(e.RequestBody)
+	responses, rSchemas := newResponses(e.Responses)
 	out := endpoint{
 		Description: e.Desciption,
-		Responses:   g.newResponses(e.Responses),
-		RequestBody: g.newRequest(e.RequestBody),
+		Responses:   responses,
+		RequestBody: body,
 		Parameters:  params,
 	}
-	return out
+	schemas := append(rSchemas, bSchema)
+	return out, schemas
 }
 
 type parameter struct {
@@ -92,7 +105,7 @@ type schema struct {
 	Items *schema `json:"items,omitempty" yaml:"items,omitempty"`
 }
 
-func (g *generator) newSchema(t string, v interface{}) schema {
+func newSchema(t string, v interface{}) schema {
 	array := reflect.TypeOf(v).Kind() == reflect.Slice
 	out := &schema{}
 	fill := out
@@ -115,16 +128,22 @@ func (g *generator) newSchema(t string, v interface{}) schema {
 
 type responses map[string]response
 
-func (g *generator) newResponses(in map[int]interface{}) responses {
+func newResponses(in map[int]interface{}) (responses, []*jsonschema.Schema) {
 	out := responses{}
+	schemas := []*jsonschema.Schema{}
+
 	if len(in) == 0 {
 		code := http.StatusOK
-		out[fmt.Sprint(code)] = g.newResponse(code, "")
+		resp, schema := newResponse(code, "")
+		schemas = append(schemas, schema)
+		out[fmt.Sprint(code)] = *resp
 	}
 	for code, data := range in {
-		out[fmt.Sprint(code)] = g.newResponse(code, data)
+		resp, schema := newResponse(code, data)
+		schemas = append(schemas, schema)
+		out[fmt.Sprint(code)] = *resp
 	}
-	return out
+	return out, schemas
 }
 
 type response struct {
@@ -132,22 +151,27 @@ type response struct {
 	Content     content `json:"content" yaml:"content"`
 }
 
-func (g *generator) newResponse(code int, in interface{}) response {
-	tSchema := jsonschema.Reflect(in)
-	tRef := ""
-	for name, def := range tSchema.Definitions {
-		tRef = fmt.Sprintf("#/components/schemas/%s", name)
-		g.schemas[name] = def
+func newResponse(code int, in interface{}) (*response, *jsonschema.Schema) {
+	if in == nil {
+		return nil, nil
 	}
-	//g.schemas = tSchema.Definitions
-	return response{
+	schema := jsonschema.Reflect(in)
+	nameTokens := strings.SplitN(reflect.TypeOf(in).String(), ".", 2)
+	var reference string
+	if len(nameTokens) < 2 {
+		reference = nameTokens[0]
+	} else {
+		reference = fmt.Sprintf("#/components/schemas/%s", nameTokens[1])
+	}
+	resp := &response{
 		Description: statusText(code),
 		Content: content{
 			"application/json": {
-				Schema: g.newSchema(tRef, in),
+				Schema: newSchema(reference, in),
 			},
 		},
 	}
+	return resp, schema
 }
 
 type request struct {
@@ -156,24 +180,26 @@ type request struct {
 	Required    bool    `json:"required" yaml:"required"`
 }
 
-func (g *generator) newRequest(in interface{}) *request {
+func newRequest(in interface{}) (*request, *jsonschema.Schema) {
 	if in == nil {
-		return nil
+		return nil, nil
 	}
-	tSchema := jsonschema.Reflect(in)
-	tRef := ""
-	for name, def := range tSchema.Definitions {
-		tRef = fmt.Sprintf("#/components/schemas/%s", name)
-		g.schemas[name] = def
+	schema := jsonschema.Reflect(in)
+	nameTokens := strings.SplitN(reflect.TypeOf(in).String(), ".", 2)
+	var reference string
+	if len(nameTokens) < 2 {
+		reference = nameTokens[0]
+	} else {
+		reference = fmt.Sprintf("#/components/schemas/%s", nameTokens[1])
 	}
-	//g.schemas = tSchema.Definitions
-	return &request{
+	req := &request{
 		Content: content{
 			"application/json": {
-				Schema: g.newSchema(tRef, in),
+				Schema: newSchema(reference, in),
 			},
 		},
 	}
+	return req, schema
 }
 
 type content map[string]schemaDef

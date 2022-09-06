@@ -26,6 +26,7 @@ type Todo struct {
 	Name        string `json:"name" yaml:"name" jsonschema:"minLength=3"`
 	Description string `json:"description" yaml:"description"`
 	Done        bool   `json:"done" yaml:"done"`
+	Notes       []Note `json:"notes" yaml:"notes"`
 }
 
 func (t *Todo) Finish() {
@@ -43,4 +44,9 @@ func (tr *TodoRequest) AsTodo() *Todo {
 		Description: tr.Description,
 		Done:        false,
 	}
+}
+
+type Note struct {
+	Note      string
+	Important bool
 }

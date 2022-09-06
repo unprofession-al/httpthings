@@ -11,7 +11,12 @@ import (
 )
 
 func (s *Server) OpenAPIHandler(res http.ResponseWriter, req *http.Request) {
-	respond.Auto(res, req, http.StatusOK, s.spec)
+	j, err := s.spec.AsJSON()
+	if err != nil {
+		respond.Auto(res, req, http.StatusInternalServerError, "could not render json")
+		return
+	}
+	respond.Raw(res, http.StatusOK, j)
 }
 
 func (s Server) ListTodosHandler(e route.Endpoint) http.HandlerFunc {

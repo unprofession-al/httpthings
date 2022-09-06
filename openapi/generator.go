@@ -23,7 +23,7 @@ type Config struct {
 
 type generator struct {
 	spec    *Spec
-	schemas jsonschema.Definitions
+	schemas []*jsonschema.Schema
 }
 
 func New(c Config, r route.Routes, base string) *Spec {
@@ -53,14 +53,25 @@ func New(c Config, r route.Routes, base string) *Spec {
 				},
 			},
 		},
-		schemas: jsonschema.Definitions{},
 	}
+	schemas := []*jsonschema.Schema{}
 	for _, route := range r {
 		if _, ok := g.spec.Paths[route.Path]; !ok {
 			g.spec.Paths[route.Path] = endpoints{}
 		}
-		g.spec.Paths[route.Path][strings.ToLower(route.Method)] = g.newEndpoint(route.Endpoint)
+		epSchemas := []*jsonschema.Schema{}
+		g.spec.Paths[route.Path][strings.ToLower(route.Method)], epSchemas = newEndpoint(route.Endpoint)
+		schemas = append(schemas, epSchemas...)
 	}
-	g.spec.Components.Schemas = g.schemas
+	defs := jsonschema.Definitions{}
+	for _, schema := range g.schemas {
+		if schema == nil || schema.Definitions == nil {
+			continue
+		}
+		for key, def := range schema.Definitions {
+			defs[key] = def
+		}
+	}
+	g.spec.Components.Schemas = defs
 	return g.spec
 }
