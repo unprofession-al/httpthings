@@ -80,7 +80,7 @@ func newEndpoint(e route.Endpoint) (endpoint, []*jsonschema.Schema) {
 	body, bSchema := newRequest(e.RequestBody)
 	responses, rSchemas := newResponses(e.Responses)
 	out := endpoint{
-		Description: e.Desciption,
+		Description: e.Description,
 		Responses:   responses,
 		RequestBody: body,
 		Parameters:  params,

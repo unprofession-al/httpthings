@@ -12,7 +12,7 @@ import (
 type Endpoint struct {
 	Parameters  []Parameter                     `json:"query_params" yaml:"query_params"`
 	Name        string                          `json:"name" yaml:"name"`
-	Desciption  string                          `json:"description" yaml:"description"`
+	Description string                          `json:"description" yaml:"description"`
 	RequestBody interface{}                     `json:"request" yaml:"request"`
 	Responses   map[int]interface{}             `json:"response" yaml:"response"`
 	HandlerFunc func(Endpoint) http.HandlerFunc `json:"-" yaml:"-"`
