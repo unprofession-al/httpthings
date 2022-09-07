@@ -44,13 +44,12 @@ func NewServer(listener, static string) (Server, error) {
 	}
 	routes.PopulateRouter(r)
 
-	r.Path("/openapi.json").HandlerFunc(s.OpenAPIHandler)
-
 	if static != "" {
 		r.PathPrefix("/").Handler(http.FileServer(http.Dir(static)))
 	}
 
 	s.GenerateOpenAPI(routes)
+	r.Path("/openapi.json").HandlerFunc(s.spec.GetHandler())
 
 	s.handler = r
 	return s, nil

@@ -10,15 +10,6 @@ import (
 	"github.com/unprofession-al/httpthings/route"
 )
 
-func (s *Server) OpenAPIHandler(res http.ResponseWriter, req *http.Request) {
-	j, err := s.spec.AsJSON()
-	if err != nil {
-		respond.Auto(res, req, http.StatusInternalServerError, "could not render json")
-		return
-	}
-	respond.Raw(res, http.StatusOK, j)
-}
-
 func (s Server) ListTodosHandler(e route.Endpoint) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		respond.Auto(res, req, http.StatusOK, s.todos.AsSlice())
