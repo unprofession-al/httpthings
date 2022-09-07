@@ -116,7 +116,7 @@ func newSchema(t string, v interface{}) schema {
 	}
 	switch t {
 	case "bool":
-		fill.Type = t
+		fill.Type = "boolean"
 	case "string":
 		fill.Type = t
 	case "integer":
