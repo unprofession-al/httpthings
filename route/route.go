@@ -87,6 +87,22 @@ func (r Routes) PopulateRouter(router *mux.Router) {
 	}
 }
 
+func (r Routes) GetActionMap() map[string]map[string]string {
+	out := map[string]map[string]string{}
+	for _, route := range r {
+		path := route.Path
+		method := route.Method
+		action := route.Endpoint.Name
+		methods, found := out[path]
+		if !found {
+			methods = map[string]string{}
+		}
+		methods[method] = action
+		out[path] = methods
+	}
+	return out
+}
+
 func notImplemented(e Endpoint) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusNotImplemented)
