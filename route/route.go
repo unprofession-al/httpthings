@@ -3,6 +3,7 @@ package route
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -22,7 +23,7 @@ func NewRoutes(c RouteConfig, base string) (Routes, error) {
 
 func expandRoutes(c RouteConfig, path string) (Routes, error) {
 	r := []Route{}
-	tidyPath, pathParams := tidyPath(path)
+	tidyPath, pathParams := extractPathParams(path)
 	path = tidyPath
 	err := checkHTTPVerbs(c.Endpoints)
 	if err != nil {
@@ -37,9 +38,25 @@ func expandRoutes(c RouteConfig, path string) (Routes, error) {
 		}
 		r = append(r, route)
 	}
-	for p, route := range c.Routes {
+	// By sorting the (sub)routes alphabetically we ensure that the order
+	// it which the routes are attached to the mux.Router avoids the shadowing
+	// of specific routes by "catch all" routes. For example:
+	//
+	// func main() {
+	//     router := mux.NewRouter().StrictSlash(true)
+	//     router.HandleFunc("/test/{var}", varHandler)
+	//     router.HandleFunc("/test/a", aHandler)          // this route would never be executed
+	//     http.ListenAndServe(":8888", router)
+	// }
+	//
+	paths := make([]string, 0, len(c.Routes))
+	for p := range c.Routes {
+		paths = append(paths, p)
+	}
+	sort.Strings(paths)
+	for _, p := range paths {
 		subpath := fmt.Sprintf("%s%s/", path, strings.Trim(p, "/"))
-		routes, err := expandRoutes(route, subpath)
+		routes, err := expandRoutes(c.Routes[p], subpath)
 		if err != nil {
 			return r, err
 		}
@@ -64,8 +81,9 @@ func (r Routes) PopulateRouter(router *mux.Router) {
 		if strings.HasSuffix(path, "*/") {
 			path = strings.TrimSuffix(path, "*/")
 			router.PathPrefix(path).HandlerFunc(f(route.Endpoint)).Methods(route.Method)
+		} else {
+			router.Path(path).HandlerFunc(f(route.Endpoint)).Methods(route.Method)
 		}
-		router.Path(path).HandlerFunc(f(route.Endpoint)).Methods(route.Method)
 	}
 }
 

@@ -1,8 +1,6 @@
 package openapi
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -18,13 +16,6 @@ type Spec struct {
 	Servers    []server   `json:"servers,omitempty" yaml:"servers,omitempty"`
 	Paths      paths      `json:"paths" yaml:"paths"`
 	Components components `json:"components" yaml:"components"`
-}
-
-func (s *Spec) AsJSON() ([]byte, error) {
-	out, err := json.MarshalIndent(s, "", "  ")
-	out = bytes.ReplaceAll(out, []byte("#/$defs/"), []byte("#/components/schemas/"))
-	return out, err
-
 }
 
 type info struct {
@@ -158,7 +149,10 @@ func newResponse(code int, in interface{}) (*response, *jsonschema.Schema) {
 	if in == nil {
 		return nil, nil
 	}
-	schema := jsonschema.Reflect(in)
+	r := jsonschema.Reflector{
+		ReferenceRoot: "#/components/schemas/",
+	}
+	schema := r.Reflect(in)
 	nameTokens := strings.SplitN(reflect.TypeOf(in).String(), ".", 2)
 	var reference string
 	if len(nameTokens) < 2 {
@@ -187,7 +181,10 @@ func newRequest(in interface{}) (*request, *jsonschema.Schema) {
 	if in == nil {
 		return nil, nil
 	}
-	schema := jsonschema.Reflect(in)
+	r := jsonschema.Reflector{
+		ReferenceRoot: "#/components/schemas/",
+	}
+	schema := r.Reflect(in)
 	nameTokens := strings.SplitN(reflect.TypeOf(in).String(), ".", 2)
 	var reference string
 	if len(nameTokens) < 2 {

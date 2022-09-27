@@ -1,7 +1,9 @@
 package route
 
 import (
+	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -89,4 +91,33 @@ func NewLocation(in string) Location {
 // String returns a string representation of the mode.
 func (l Location) String() string {
 	return locationText[l]
+}
+
+func extractPathParams(path string) (tidy string, params []Parameter) {
+	tidy = path
+	rex := regexp.MustCompile(`\{(?P<param>.*)\}`)
+	matches := rex.FindAllStringSubmatch(path, -1)
+	for _, param := range matches {
+		if len(param) < 2 {
+			continue
+		}
+		whole := param[0]
+		pair := strings.SplitN(param[1], "|", 2)
+		key := strings.TrimSpace(pair[0])
+		desc := key
+		if len(pair) == 2 {
+			desc = strings.TrimSpace(pair[1])
+		}
+		tidy = strings.ReplaceAll(tidy, whole, fmt.Sprintf("{%s}", key))
+		p := Parameter{
+			Name:        key,
+			Location:    LocationPath,
+			Required:    true,
+			Default:     nil,
+			Description: desc,
+			Content:     "string",
+		}
+		params = append(params, p)
+	}
+	return
 }

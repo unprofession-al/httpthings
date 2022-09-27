@@ -1,11 +1,12 @@
 package openapi
 
 import (
+	"encoding/json"
 	"net/http"
 )
 
 func (s *Spec) GetHandler() http.HandlerFunc {
-	out, err := s.AsJSON()
+	out, err := json.MarshalIndent(s, "", "  ")
 	code := http.StatusOK
 	if err != nil {
 		out = []byte("{ 'error': 'failed while rendering data to json' }")
