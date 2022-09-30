@@ -1,42 +1,80 @@
+// Package respond provides functions to easily write http responses to the client
 package respond
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	ContentTypeYAML = "text/yaml; charset=utf-8"        // default Content-Type when text/yaml is requested
+	ContentTypeJSON = "application/json; charset=utf-8" // default Content-Type when json is requested
+	ContentTypeRaw  = "text/plain; charset=utf-8"       // default Content-Type when rendering raw bytes
+)
+
 // Auto reads the 'accept' request header and tries to respond automatically with the appropriate
-// 'content-type'. This currently works for 'text/yaml', everything else will be threaded as 'application/json'.
-func Auto(res http.ResponseWriter, req *http.Request, code int, data interface{}) {
+// 'content-type'. This currently works for 'text/yaml', everything else will be threaded as
+// 'application/json'.
+func Auto(res http.ResponseWriter, req *http.Request, code int, data interface{}, headers map[string]string) error {
 	switch req.Header.Get("Accept") {
 	case "text/yaml":
-		YAML(res, req, code, data)
+		return YAML(res, code, data, headers)
 	default:
-		JSON(res, req, code, data)
+		return JSON(res, code, data, headers)
 	}
-
 }
 
-func YAML(res http.ResponseWriter, req *http.Request, code int, data interface{}) {
-	res.Header().Set("Content-Type", "text/yaml; charset=utf-8")
+// YAML uses 'gopkg.in/yaml.v3' to render the data provided as a YAML document. Head to the
+// [official documentation] to learn about the available tags to by used on the struct to controll the
+// output.
+//
+// [official documentation]: https://pkg.go.dev/gopkg.in/yaml.v3
+func YAML(res http.ResponseWriter, code int, data interface{}, headers map[string]string) error {
+	setHeaders(res, headers, ContentTypeYAML)
 	out, err := yaml.Marshal(data)
 	if err != nil {
-		out = []byte("--- error: failed while rendering data to yaml")
-		code = http.StatusInternalServerError
+		return fmt.Errorf("Failed to marshal to yaml: %w", err)
 	}
 	res.WriteHeader(code)
 	res.Write(out)
+	return nil
 }
 
-func JSON(res http.ResponseWriter, req *http.Request, code int, data interface{}) {
-	res.Header().Set("Content-Type", "application/json; charset=utf-8")
+// JSON uses the standard library to render the data provided as a JSON document, consult the [docs]
+// to learn about on how to controll the resulting output.
+//
+// [docs]: https://pkg.go.dev/encoding/json
+func JSON(res http.ResponseWriter, code int, data interface{}, headers map[string]string) error {
+	setHeaders(res, headers, ContentTypeJSON)
 	out, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
-		out = []byte("{ 'error': 'failed while rendering data to json' }")
-		code = http.StatusInternalServerError
+		return fmt.Errorf("Failed to marshal to json: %w", err)
 	}
 	res.WriteHeader(code)
 	res.Write(out)
+	return nil
+}
+
+// Raw writes plain bytes into the response and sets 'text/plain' as content type
+// header if no "Content-Type" header is provided.
+func Raw(res http.ResponseWriter, code int, data []byte, headers map[string]string) {
+	setHeaders(res, headers, ContentTypeRaw)
+	res.WriteHeader(code)
+	res.Write(data)
+}
+
+func setHeaders(res http.ResponseWriter, headers map[string]string, defaultContentType string) {
+	hasContentType := false
+	for k, v := range headers {
+		res.Header().Set(k, v)
+		if k == "Content-Type" {
+			hasContentType = true
+		}
+	}
+	if !hasContentType {
+		res.Header().Set("Content-Type", defaultContentType)
+	}
 }

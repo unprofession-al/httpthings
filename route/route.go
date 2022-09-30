@@ -3,6 +3,7 @@ package route
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -87,20 +88,30 @@ func (r Routes) PopulateRouter(router *mux.Router) {
 	}
 }
 
-func (r Routes) GetActionMap() map[string]map[string]string {
-	out := map[string]map[string]string{}
+func (r Routes) GetActionName(path, method string) (action string, found bool) {
+	found = false
 	for _, route := range r {
-		path := route.Path
-		method := route.Method
-		action := route.Endpoint.Name
-		methods, found := out[path]
-		if !found {
-			methods = map[string]string{}
+		if strings.ToLower(route.Method) != strings.ToLower(method) {
+			continue
 		}
-		methods[method] = action
-		out[path] = methods
+		if !matchPath(route.Path, path) {
+			continue
+		}
+		action = route.Endpoint.Name
+		found = true
+		break
 	}
-	return out
+	return action, found
+}
+
+func matchPath(pattern, path string) bool {
+	subExpr := regexp.MustCompile(`\{[a-zA-Z0-9-_]\}`)
+	expression := subExpr.ReplaceAllString(pattern, `[a-zA-Z0-9-_%]*`)
+	pathExpr, err := regexp.Compile(expression)
+	if err != nil {
+		return false
+	}
+	return pathExpr.MatchString(path)
 }
 
 func notImplemented(e Endpoint) http.HandlerFunc {
