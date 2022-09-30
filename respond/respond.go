@@ -18,12 +18,12 @@ const (
 // Auto reads the 'accept' request header and tries to respond automatically with the appropriate
 // 'content-type'. This currently works for 'text/yaml', everything else will be threaded as
 // 'application/json'.
-func Auto(res http.ResponseWriter, req *http.Request, code int, data interface{}, headers map[string]string) error {
+func Auto(res http.ResponseWriter, req *http.Request, code int, data interface{}, headers ...map[string]string) error {
 	switch req.Header.Get("Accept") {
 	case "text/yaml":
-		return YAML(res, code, data, headers)
+		return YAML(res, code, data, headers...)
 	default:
-		return JSON(res, code, data, headers)
+		return JSON(res, code, data, headers...)
 	}
 }
 
@@ -32,8 +32,8 @@ func Auto(res http.ResponseWriter, req *http.Request, code int, data interface{}
 // output.
 //
 // [official documentation]: https://pkg.go.dev/gopkg.in/yaml.v3
-func YAML(res http.ResponseWriter, code int, data interface{}, headers map[string]string) error {
-	setHeaders(res, headers, ContentTypeYAML)
+func YAML(res http.ResponseWriter, code int, data interface{}, headers ...map[string]string) error {
+	setHeaders(res, ContentTypeYAML, headers...)
 	out, err := yaml.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("Failed to marshal to yaml: %w", err)
@@ -47,8 +47,8 @@ func YAML(res http.ResponseWriter, code int, data interface{}, headers map[strin
 // to learn about on how to controll the resulting output.
 //
 // [docs]: https://pkg.go.dev/encoding/json
-func JSON(res http.ResponseWriter, code int, data interface{}, headers map[string]string) error {
-	setHeaders(res, headers, ContentTypeJSON)
+func JSON(res http.ResponseWriter, code int, data interface{}, headers ...map[string]string) error {
+	setHeaders(res, ContentTypeJSON, headers...)
 	out, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
 		return fmt.Errorf("Failed to marshal to json: %w", err)
@@ -60,18 +60,20 @@ func JSON(res http.ResponseWriter, code int, data interface{}, headers map[strin
 
 // Raw writes plain bytes into the response and sets 'text/plain' as content type
 // header if no "Content-Type" header is provided.
-func Raw(res http.ResponseWriter, code int, data []byte, headers map[string]string) {
-	setHeaders(res, headers, ContentTypeRaw)
+func Raw(res http.ResponseWriter, code int, data []byte, headers ...map[string]string) {
+	setHeaders(res, ContentTypeRaw, headers...)
 	res.WriteHeader(code)
 	res.Write(data)
 }
 
-func setHeaders(res http.ResponseWriter, headers map[string]string, defaultContentType string) {
+func setHeaders(res http.ResponseWriter, defaultContentType string, headers ...map[string]string) {
 	hasContentType := false
-	for k, v := range headers {
-		res.Header().Set(k, v)
-		if k == "Content-Type" {
-			hasContentType = true
+	for _, h := range headers {
+		for k, v := range h {
+			res.Header().Set(k, v)
+			if k == "Content-Type" {
+				hasContentType = true
+			}
 		}
 	}
 	if !hasContentType {
