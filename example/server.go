@@ -49,7 +49,7 @@ func NewServer(listener, static string) (Server, error) {
 	}
 
 	s.GenerateOpenAPI(routes)
-	r.Path("/openapi.json").HandlerFunc(s.spec.GetHandler())
+	r.Path("/openapi.json").HandlerFunc(s.spec.HandleHTTP)
 
 	s.handler = r
 	return s, nil

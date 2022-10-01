@@ -16,5 +16,3 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 )
-
-replace github.com/invopop/jsonschema => ./.hack/jsonschema

@@ -1,12 +1,15 @@
 package openapi
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
 
 	"github.com/invopop/jsonschema"
+	"github.com/unprofession-al/httpthings/respond"
 	"github.com/unprofession-al/httpthings/route"
 )
 
@@ -16,6 +19,20 @@ type Spec struct {
 	Servers    []server   `json:"servers,omitempty" yaml:"servers,omitempty"`
 	Paths      paths      `json:"paths" yaml:"paths"`
 	Components components `json:"components" yaml:"components"`
+}
+
+func (s *Spec) HandleHTTP(w http.ResponseWriter, r *http.Request) {
+	headers := map[string]string{
+		"Access-Control-Allow-Origin": "*",
+	}
+	respond.JSON(w, http.StatusOK, s, headers)
+}
+
+func (s *Spec) MarshalJSON() ([]byte, error) {
+	type Alias Spec
+	raw, err := json.MarshalIndent((*Alias)(s), "", "    ")
+	out := bytes.ReplaceAll(raw, []byte("#/$defs/"), []byte("#/components/schemas/"))
+	return out, err
 }
 
 type info struct {
@@ -128,7 +145,6 @@ func newResponses(in map[int]interface{}) (responses, []*jsonschema.Schema) {
 	if len(in) == 0 {
 		code := http.StatusOK
 		resp, schema := newResponse(code, "")
-		fmt.Println(schema)
 		schemas = append(schemas, schema)
 		out[fmt.Sprint(code)] = *resp
 	}
@@ -149,10 +165,7 @@ func newResponse(code int, in interface{}) (*response, *jsonschema.Schema) {
 	if in == nil {
 		return nil, nil
 	}
-	r := jsonschema.Reflector{
-		ReferenceRoot: "#/components/schemas/",
-	}
-	schema := r.Reflect(in)
+	schema := jsonschema.Reflect(in)
 	nameTokens := strings.SplitN(reflect.TypeOf(in).String(), ".", 2)
 	var reference string
 	if len(nameTokens) < 2 {
@@ -181,10 +194,7 @@ func newRequest(in interface{}) (*request, *jsonschema.Schema) {
 	if in == nil {
 		return nil, nil
 	}
-	r := jsonschema.Reflector{
-		ReferenceRoot: "#/components/schemas/",
-	}
-	schema := r.Reflect(in)
+	schema := jsonschema.Reflect(in)
 	nameTokens := strings.SplitN(reflect.TypeOf(in).String(), ".", 2)
 	var reference string
 	if len(nameTokens) < 2 {
