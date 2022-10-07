@@ -3,6 +3,7 @@ package route
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
 type Endpoint struct {
@@ -25,4 +26,36 @@ func (e Endpoint) GetParams(r *http.Request) (map[string][]string, []error) {
 		}
 	}
 	return out, errs
+}
+
+func (e Endpoint) GetParamAsString(name string, r *http.Request) (string, bool) {
+	param := Parameter{}
+	for _, p := range e.Parameters {
+		if p.Name != name {
+			continue
+		}
+		param = p
+		break
+	}
+	return param.First(r)
+}
+
+func (e Endpoint) GetParamAsInt(name string, r *http.Request) (int, bool) {
+	param := Parameter{}
+	for _, p := range e.Parameters {
+		if p.Name != name {
+			continue
+		}
+		param = p
+		break
+	}
+	val, ok := param.First(r)
+	if !ok {
+		return 0, false
+	}
+	out, err := strconv.Atoi(val)
+	if err != nil {
+		return 0, false
+	}
+	return out, true
 }

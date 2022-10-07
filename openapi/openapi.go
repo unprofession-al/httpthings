@@ -81,7 +81,7 @@ func newEndpoint(e route.Endpoint) (endpoint, []*jsonschema.Schema) {
 			In:          p.Location.String(),
 			Description: p.Description,
 			Required:    true,
-			Schema:      schema{Type: p.Content},
+			Schema:      schema{Type: p.Type},
 		}
 		params = append(params, param)
 	}

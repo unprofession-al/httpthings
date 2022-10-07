@@ -13,24 +13,24 @@ type Parameter struct {
 	Name        string   `json:"name" yaml:"name"`
 	Location    Location `json:"location" yaml:"location"`
 	Required    bool     `json:"required" yaml:"required"`
-	Default     *string  `json:"default" yaml:"default"`
+	Default     string   `json:"default" yaml:"default"`
 	Description string   `json:"description" yaml:"description"`
-	Content     string   `json:"content" yaml:"content"`
+	Type        string   `json:"content" yaml:"content"`
 }
 
 func (p Parameter) Get(r *http.Request) ([]string, bool) {
 	if p.Location == LocationPath {
 		v, ok := mux.Vars(r)[p.Name]
-		if !ok && p.Default != nil {
-			return []string{*p.Default}, true
+		if !ok && p.Default != "" {
+			return []string{p.Default}, true
 		} else if !ok {
 			return []string{}, false
 		}
 		return []string{v}, true
 	} else if p.Location == LocationHeader {
 		v := r.Header.Get(p.Name)
-		if v == "" && p.Default != nil {
-			return []string{*p.Default}, true
+		if v == "" && p.Default != "" {
+			return []string{p.Default}, true
 		} else if v == "" {
 			return []string{}, false
 		}
@@ -44,8 +44,8 @@ func (p Parameter) Get(r *http.Request) ([]string, bool) {
 		return []string{}, false
 	} else if p.Location == LocationQuery {
 		v, ok := r.URL.Query()[p.Name]
-		if !ok && p.Default != nil {
-			return []string{*p.Default}, true
+		if !ok && p.Default != "" {
+			return []string{p.Default}, true
 		} else if !ok {
 			return []string{}, false
 		}
@@ -113,9 +113,9 @@ func extractPathParams(path string) (tidy string, params []Parameter) {
 			Name:        key,
 			Location:    LocationPath,
 			Required:    true,
-			Default:     nil,
+			Default:     "",
 			Description: desc,
-			Content:     "string",
+			Type:        "string",
 		}
 		params = append(params, p)
 	}
