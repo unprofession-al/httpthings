@@ -33,7 +33,9 @@ func Auto(res http.ResponseWriter, req *http.Request, code int, data interface{}
 //
 // [official documentation]: https://pkg.go.dev/gopkg.in/yaml.v3
 func YAML(res http.ResponseWriter, code int, data interface{}, headers ...map[string]string) error {
-	setHeaders(res, ContentTypeYAML, headers...)
+	for k, v := range getHeaders(ContentTypeRaw, headers...) {
+		res.Header().Add(k, v)
+	}
 	out, err := yaml.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("Failed to marshal to yaml: %w", err)
@@ -48,7 +50,9 @@ func YAML(res http.ResponseWriter, code int, data interface{}, headers ...map[st
 //
 // [docs]: https://pkg.go.dev/encoding/json
 func JSON(res http.ResponseWriter, code int, data interface{}, headers ...map[string]string) error {
-	setHeaders(res, ContentTypeJSON, headers...)
+	for k, v := range getHeaders(ContentTypeRaw, headers...) {
+		res.Header().Add(k, v)
+	}
 	out, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
 		return fmt.Errorf("Failed to marshal to json: %w", err)
@@ -61,22 +65,26 @@ func JSON(res http.ResponseWriter, code int, data interface{}, headers ...map[st
 // Raw writes plain bytes into the response and sets 'text/plain' as content type
 // header if no "Content-Type" header is provided.
 func Raw(res http.ResponseWriter, code int, data []byte, headers ...map[string]string) {
-	setHeaders(res, ContentTypeRaw, headers...)
+	for k, v := range getHeaders(ContentTypeRaw, headers...) {
+		res.Header().Add(k, v)
+	}
 	res.WriteHeader(code)
 	res.Write(data)
 }
 
-func setHeaders(res http.ResponseWriter, defaultContentType string, headers ...map[string]string) {
+func getHeaders(defaultContentType string, headers ...map[string]string) map[string]string {
+	out := map[string]string{}
 	hasContentType := false
 	for _, h := range headers {
 		for k, v := range h {
-			res.Header().Set(k, v)
+			out[k] = v
 			if k == "Content-Type" {
 				hasContentType = true
 			}
 		}
 	}
 	if !hasContentType {
-		res.Header().Set("Content-Type", defaultContentType)
+		out["Content-Type"] = defaultContentType
 	}
+	return out
 }
