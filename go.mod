@@ -10,8 +10,8 @@ require (
 )
 
 require (
-	github.com/aws/aws-lambda-go v1.17.0 // indirect
-	github.com/iancoleman/orderedmap v0.0.0-20190318233801-ac98e3ecb4b0 // indirect
+	github.com/aws/aws-lambda-go v1.34.1 // indirect
+	github.com/iancoleman/orderedmap v0.2.0 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
