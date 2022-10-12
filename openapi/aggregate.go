@@ -6,8 +6,9 @@ import (
 )
 
 func AggregateSpec(base Spec, sources map[string]Spec) (Spec, error) {
-	//for prefix, src := range sources {
-	for _, spec := range sources {
+	for prefix, spec := range sources {
+		base.Info.Description += fmt.Sprintf("\n\n# %s (`%s`)\n\n%s\n", spec.Info.Title, prefix, spec.Info.Description)
+		// for _, spec := range sources {
 		for path, endpoint := range spec.Paths {
 			if existing, exists := base.Paths[path]; exists && !reflect.DeepEqual(endpoint, existing) {
 				return base, fmt.Errorf("path %s already exists, cannot overwrite", path)

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/invopop/jsonschema"
+	"github.com/invopop/yaml"
 	"github.com/unprofession-al/httpthings/respond"
 	"github.com/unprofession-al/httpthings/route"
 )
@@ -25,7 +26,14 @@ func (s *Spec) HandleHTTP(w http.ResponseWriter, r *http.Request) {
 	headers := map[string]string{
 		"Access-Control-Allow-Origin": "*",
 	}
-	respond.JSON(w, http.StatusOK, s, headers)
+	if strings.HasSuffix(r.URL.Path, ".yaml") ||
+		strings.HasSuffix(r.URL.Path, ".yml") {
+		b, _ := yaml.Marshal(s)
+		headers["Content-Type"] = respond.ContentTypeYAML
+		respond.Raw(w, http.StatusOK, b, headers)
+	} else {
+		respond.JSON(w, http.StatusOK, s, headers)
+	}
 }
 
 func (s *Spec) MarshalJSON() ([]byte, error) {
