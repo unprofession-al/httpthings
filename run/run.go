@@ -8,35 +8,29 @@ import (
 	"github.com/apex/gateway"
 )
 
-// Run starts a web server in the mode provided. In case `log` is set to true, some
-// basic output in printed to stdout.
-func Run(mode mode, listener string, handler http.Handler, log bool) error {
+// Run starts a web server in the mode provided. log is a function that takes only a string
+// so you can bring your own logging
+func Run(mode mode, listener string, handler http.Handler, log func(string)) error {
 	switch mode {
 	case ModeLocalServer:
 		if listener == "" {
-			return fmt.Errorf("No listener defined")
+			return fmt.Errorf("no listener defined")
 		}
-		if log {
-			fmt.Printf("Running locally at 'http://%s'...\n", listener)
-		}
+		log(fmt.Sprintf("Running locally at 'http://%s'...\n", listener))
 		return http.ListenAndServe(listener, handler)
 	case ModeAzureFunc:
 		port, ok := os.LookupEnv("FUNCTIONS_CUSTOMHANDLER_PORT")
 		if !ok {
-			return fmt.Errorf("Environment FUNCTIONS_CUSTOMHANDLER_PORT not defined")
+			return fmt.Errorf("environment FUNCTIONS_CUSTOMHANDLER_PORT not defined")
 		}
 		listener := fmt.Sprintf(":%s", port)
-		if log {
-			fmt.Printf("Running as Azure Function at '%s'...\n", listener)
-		}
+		log(fmt.Sprintf("Running as Azure Function at '%s'...\n", listener))
 		return http.ListenAndServe(listener, handler)
 	case ModeAWSLambda:
-		if log {
-			fmt.Printf("Running as AWS Lambda...\n")
-		}
+		log(fmt.Sprintf("Running as AWS Lambda...\n"))
 		return gateway.ListenAndServe(listener, handler)
 	default:
-		return fmt.Errorf("Unknown mode")
+		return fmt.Errorf("unknown mode")
 	}
 }
 

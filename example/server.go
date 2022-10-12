@@ -56,7 +56,10 @@ func NewServer(listener, static string) (Server, error) {
 }
 
 func (s *Server) run() {
-	run.Run(run.DetectRunMode(), s.listener, s.handler, true)
+	err := run.Run(run.DetectRunMode(), s.listener, s.handler, func(log string) { fmt.Printf("INFO: %s", log) })
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func (s *Server) GenerateOpenAPI(r route.Routes) {
