@@ -2,8 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/unprofession-al/httpthings/respond"
@@ -29,7 +28,7 @@ func (s Server) ShowTodoHandler(e route.Endpoint) http.HandlerFunc {
 		}
 		name, ok := params["name"]
 		if !ok || len(name) > 1 {
-			respond.Auto(res, req, http.StatusNotAcceptable, fmt.Sprintf("todo not provided"))
+			respond.Auto(res, req, http.StatusNotAcceptable, "todo not provided")
 			return
 		}
 		if todo, found := s.todos[name[0]]; found {
@@ -43,7 +42,7 @@ func (s Server) ShowTodoHandler(e route.Endpoint) http.HandlerFunc {
 func (s Server) AddTodoHandler(e route.Endpoint) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		todo := &TodoRequest{}
-		b, err := ioutil.ReadAll(req.Body)
+		b, err := io.ReadAll(req.Body)
 		if err != nil {
 			respond.Auto(res, req, http.StatusInternalServerError, "could not read request body")
 			return
@@ -75,7 +74,7 @@ func (s Server) FinishTodoHandler(e route.Endpoint) http.HandlerFunc {
 		}
 		name, ok := params["name"]
 		if !ok || len(name) > 1 {
-			respond.Auto(res, req, http.StatusNotAcceptable, fmt.Sprintf("todo not provided"))
+			respond.Auto(res, req, http.StatusNotAcceptable, "todo not provided")
 			return
 		}
 		if _, found := s.todos[name[0]]; found {

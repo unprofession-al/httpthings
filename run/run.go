@@ -27,7 +27,7 @@ func Run(mode mode, listener string, handler http.Handler, log func(string)) err
 		log(fmt.Sprintf("Running as Azure Function at '%s'...\n", listener))
 		return http.ListenAndServe(listener, handler)
 	case ModeAWSLambda:
-		log(fmt.Sprintf("Running as AWS Lambda...\n"))
+		log("Running as AWS Lambda...\n")
 		return gateway.ListenAndServe(listener, handler)
 	default:
 		return fmt.Errorf("unknown mode")

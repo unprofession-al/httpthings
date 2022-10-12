@@ -52,7 +52,7 @@ func New(c Config, r route.Routes, base string) Spec {
 		if _, ok := spec.Paths[route.Path]; !ok {
 			spec.Paths[route.Path] = endpoints{}
 		}
-		epSchemas := []*jsonschema.Schema{}
+		var epSchemas []*jsonschema.Schema
 		spec.Paths[route.Path][strings.ToLower(route.Method)], epSchemas = newEndpoint(route.Endpoint)
 		schemas = append(schemas, epSchemas...)
 	}

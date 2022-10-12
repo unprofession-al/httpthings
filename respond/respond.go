@@ -38,7 +38,7 @@ func YAML(res http.ResponseWriter, code int, data interface{}, headers ...map[st
 	}
 	out, err := yaml.Marshal(data)
 	if err != nil {
-		return fmt.Errorf("Failed to marshal to yaml: %w", err)
+		return fmt.Errorf("failed to marshal to yaml: %w", err)
 	}
 	res.WriteHeader(code)
 	res.Write(out)
@@ -55,7 +55,7 @@ func JSON(res http.ResponseWriter, code int, data interface{}, headers ...map[st
 	}
 	out, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
-		return fmt.Errorf("Failed to marshal to json: %w", err)
+		return fmt.Errorf("failed to marshal to json: %w", err)
 	}
 	res.WriteHeader(code)
 	res.Write(out)

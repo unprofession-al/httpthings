@@ -91,7 +91,7 @@ func (r Routes) PopulateRouter(router *mux.Router) {
 func (r Routes) GetActionName(path, method string) (action string, found bool) {
 	found = false
 	for _, route := range r {
-		if strings.ToLower(route.Method) != strings.ToLower(method) {
+		if !strings.EqualFold(route.Method, method) {
 			continue
 		}
 		if !matchPath(route.Path, path) {
