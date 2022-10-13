@@ -74,6 +74,7 @@ type paths map[string]endpoints
 type endpoints map[string]endpoint
 
 type endpoint struct {
+	Summary     string              `json:"summary,omitempty" yaml:"summary"`
 	Description string              `json:"description,omitempty" yaml:"description"`
 	Tags        []string            `json:"tags,omitempty" yaml:"tags"`
 	RequestBody *request            `json:"requestBody,omitempty" yaml:"requestBody,omitempty"`
@@ -96,6 +97,7 @@ func newEndpoint(e route.Endpoint) (endpoint, []*jsonschema.Schema) {
 	body, bSchema := newRequest(e.RequestBody)
 	responses, rSchemas := newResponses(e.Responses)
 	out := endpoint{
+		Summary:     e.Name,
 		Description: e.Description,
 		Responses:   responses,
 		RequestBody: body,
