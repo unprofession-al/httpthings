@@ -6,14 +6,20 @@ import (
 )
 
 func AggregateSpec(base Spec, sources map[string]Spec) (Spec, error) {
+	tags := []tagObject{}
 	for prefix, spec := range sources {
 		base.Info.Description += fmt.Sprintf("\n\n# %s (`%s`)\n\n%s\n", spec.Info.Title, prefix, spec.Info.Description)
-		// for _, spec := range sources {
-		for path, endpoint := range spec.Paths {
-			if existing, exists := base.Paths[path]; exists && !reflect.DeepEqual(endpoint, existing) {
+		tags = append(tags, tagObject{Name: spec.Info.Title, Description: spec.Info.Description})
+		for path, eps := range spec.Paths {
+			if existing, exists := base.Paths[path]; exists && !reflect.DeepEqual(eps, existing) {
 				return base, fmt.Errorf("path %s already exists, cannot overwrite", path)
 			}
-			base.Paths[path] = endpoint
+			tagged := endpoints{}
+			for verb, ep := range eps {
+				ep.Tags = append(ep.Tags, spec.Info.Title)
+				tagged[verb] = ep
+			}
+			base.Paths[path] = tagged
 		}
 		for name, schema := range spec.Components.Schemas {
 			if existing, exists := base.Components.Schemas[name]; exists && !reflect.DeepEqual(schema, existing) {

@@ -15,11 +15,12 @@ import (
 )
 
 type Spec struct {
-	OpenAPI    string     `json:"openapi" yaml:"openapi"`
-	Info       info       `json:"info" yaml:"info"`
-	Servers    []server   `json:"servers,omitempty" yaml:"servers,omitempty"`
-	Paths      paths      `json:"paths" yaml:"paths"`
-	Components components `json:"components" yaml:"components"`
+	OpenAPI    string      `json:"openapi" yaml:"openapi"`
+	Info       info        `json:"info" yaml:"info"`
+	Servers    []server    `json:"servers,omitempty" yaml:"servers,omitempty"`
+	Paths      paths       `json:"paths" yaml:"paths"`
+	Components components  `json:"components" yaml:"components"`
+	Tags       []tagObject `json:"tags,omitempty" yaml:"tags,omitempty"`
 }
 
 func (s *Spec) HandleHTTP(w http.ResponseWriter, r *http.Request) {
@@ -41,6 +42,11 @@ func (s *Spec) MarshalJSON() ([]byte, error) {
 	raw, err := json.MarshalIndent((*Alias)(s), "", "    ")
 	out := bytes.ReplaceAll(raw, []byte("#/$defs/"), []byte("#/components/schemas/"))
 	return out, err
+}
+
+type tagObject struct {
+	Name        string `json:"name" yaml:"name"`
+	Description string `json:"description" yaml:"description"`
 }
 
 type info struct {
@@ -74,9 +80,10 @@ type paths map[string]endpoints
 type endpoints map[string]endpoint
 
 type endpoint struct {
-	Summary     string               `json:"summary,omitempty" yaml:"summary"`
-	Description string               `json:"description,omitempty" yaml:"description"`
-	Tags        []string             `json:"tags,omitempty" yaml:"tags"`
+	Summary     string               `json:"summary,omitempty" yaml:"summary,omitempty"`
+	OperationID string               `json:"operationId,omitempty" yaml:"operationId,omitempty"`
+	Description string               `json:"description,omitempty" yaml:"description,omitempty"`
+	Tags        []string             `json:"tags,omitempty" yaml:"tags,omitempty"`
 	RequestBody *request             `json:"requestBody,omitempty" yaml:"requestBody,omitempty"`
 	Responses   map[string]response  `json:"responses" yaml:"responses"`
 	Parameters  []parameter          `json:"parameters,omitempty" yaml:"parameters,omitempty"`
@@ -100,6 +107,7 @@ func newEndpoint(e route.Endpoint) (endpoint, []*jsonschema.Schema, map[string]s
 	out := endpoint{
 		Summary:     e.Name,
 		Description: e.Description,
+		OperationID: e.Description,
 		Responses:   responses,
 		RequestBody: body,
 		Parameters:  params,
