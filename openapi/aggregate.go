@@ -5,10 +5,9 @@ import (
 	"reflect"
 )
 
-func AggregateSpec(base Spec, sources map[string]Spec) (Spec, error) {
+func AggregateSpec(base Spec, sources []Spec) (Spec, error) {
 	tags := []tagObject{}
-	for prefix, spec := range sources {
-		base.Info.Description += fmt.Sprintf("\n\n# %s (`%s`)\n\n%s\n", spec.Info.Title, prefix, spec.Info.Description)
+	for _, spec := range sources {
 		tags = append(tags, tagObject{Name: spec.Info.Title, Description: spec.Info.Description})
 		for path, eps := range spec.Paths {
 			if existing, exists := base.Paths[path]; exists && !reflect.DeepEqual(eps, existing) {
@@ -28,5 +27,6 @@ func AggregateSpec(base Spec, sources map[string]Spec) (Spec, error) {
 			base.Components.Schemas[name] = schema
 		}
 	}
+	base.Tags = tags
 	return base, nil
 }
