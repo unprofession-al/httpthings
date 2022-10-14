@@ -1,0 +1,28 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  default:
+    cmds:
+      - task: dep
+      - task: test
+      - task: coverage
+      - task: vet
+      - task: lint
+  test:
+    cmds:
+      - go test ./...
+  coverage:
+    cmds:
+      - go test ./... -coverprofile=coverage.out
+  dep:
+    cmds:
+      - go mod download
+      - go mod tidy
+  vet:
+    cmds:
+      - go vet ./...
+  lint:
+    cmds:
+      - for i in $(find . -name '*.go' -printf '%h\n' | sort -u); do (cd $i && pwd && staticcheck ); done 

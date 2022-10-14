@@ -7,12 +7,13 @@ import (
 )
 
 type Endpoint struct {
-	Parameters  []Parameter                     `json:"query_params" yaml:"query_params"`
-	Name        string                          `json:"name" yaml:"name"`
-	Description string                          `json:"description" yaml:"description"`
-	RequestBody interface{}                     `json:"request" yaml:"request"`
-	Responses   map[int]interface{}             `json:"response" yaml:"response"`
-	HandlerFunc func(Endpoint) http.HandlerFunc `json:"-" yaml:"-"`
+	Parameters  []Parameter
+	Name        string
+	Description string
+	RequestBody interface{}
+	Responses   map[int]interface{}
+	HandlerFunc func(Endpoint) http.HandlerFunc
+	Auth        *Auth
 }
 
 func (e Endpoint) GetParams(r *http.Request) (map[string][]string, []error) {

@@ -7,6 +7,12 @@ import (
 )
 
 func (s Server) routeConfig() r.RouteConfig {
+	basicAuth := &r.Auth{
+		Name:              "BasicAuth",
+		Type:              "http",
+		Scheme:            "basic",
+		MiddlewareWrapper: WrapBasicAuth,
+	}
 	return r.RouteConfig{
 		Routes: map[string]r.RouteConfig{
 			"todos": {
@@ -36,6 +42,7 @@ func (s Server) routeConfig() r.RouteConfig {
 								Responses: map[int]interface{}{
 									http.StatusOK: Todo{},
 								},
+								Auth: basicAuth,
 							},
 							http.MethodPut: {
 								Name:        "FinishTodo",

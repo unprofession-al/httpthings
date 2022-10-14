@@ -10,9 +10,10 @@ import (
 )
 
 func (s Server) ListTodosHandler(e route.Endpoint) http.HandlerFunc {
-	return func(res http.ResponseWriter, req *http.Request) {
+	handler := func(res http.ResponseWriter, req *http.Request) {
 		respond.Auto(res, req, http.StatusOK, s.todos.AsSlice())
 	}
+	return handler
 }
 
 func (s Server) ShowTodoHandler(e route.Endpoint) http.HandlerFunc {

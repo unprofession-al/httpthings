@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/invopop/jsonschema"
@@ -48,13 +49,19 @@ func New(c Config, r route.Routes, base string) Spec {
 		},
 	}
 	schemas := []*jsonschema.Schema{}
+	secSchemes := map[string]securityScheme{}
 	for _, route := range r {
 		if _, ok := spec.Paths[route.Path]; !ok {
 			spec.Paths[route.Path] = endpoints{}
 		}
 		var epSchemas []*jsonschema.Schema
-		spec.Paths[route.Path][strings.ToLower(route.Method)], epSchemas = newEndpoint(route.Endpoint)
+		var secScheme map[string]securityScheme
+		spec.Paths[route.Path][strings.ToLower(route.Method)], epSchemas, secScheme = newEndpoint(route.Endpoint)
 		schemas = append(schemas, epSchemas...)
+		for k, v := range secScheme {
+			secSchemes[k] = v
+			fmt.Printf("name: %s, val: %v\n", k, v)
+		}
 	}
 	defs := jsonschema.Definitions{}
 	for _, schema := range schemas {
@@ -66,5 +73,6 @@ func New(c Config, r route.Routes, base string) Spec {
 		}
 	}
 	spec.Components.Schemas = defs
+	spec.Components.SecuritySchemes = secSchemes
 	return spec
 }

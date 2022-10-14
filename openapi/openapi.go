@@ -74,15 +74,16 @@ type paths map[string]endpoints
 type endpoints map[string]endpoint
 
 type endpoint struct {
-	Summary     string              `json:"summary,omitempty" yaml:"summary"`
-	Description string              `json:"description,omitempty" yaml:"description"`
-	Tags        []string            `json:"tags,omitempty" yaml:"tags"`
-	RequestBody *request            `json:"requestBody,omitempty" yaml:"requestBody,omitempty"`
-	Responses   map[string]response `json:"responses" yaml:"responses"`
-	Parameters  []parameter         `json:"parameters,omitempty" yaml:"parameters,omitempty"`
+	Summary     string               `json:"summary,omitempty" yaml:"summary"`
+	Description string               `json:"description,omitempty" yaml:"description"`
+	Tags        []string             `json:"tags,omitempty" yaml:"tags"`
+	RequestBody *request             `json:"requestBody,omitempty" yaml:"requestBody,omitempty"`
+	Responses   map[string]response  `json:"responses" yaml:"responses"`
+	Parameters  []parameter          `json:"parameters,omitempty" yaml:"parameters,omitempty"`
+	Security    securityRequirements `json:"security,omitempty" yaml:"security,omitempty"`
 }
 
-func newEndpoint(e route.Endpoint) (endpoint, []*jsonschema.Schema) {
+func newEndpoint(e route.Endpoint) (endpoint, []*jsonschema.Schema, map[string]securityScheme) {
 	params := []parameter{}
 	for _, p := range e.Parameters {
 		param := parameter{
@@ -104,7 +105,14 @@ func newEndpoint(e route.Endpoint) (endpoint, []*jsonschema.Schema) {
 		Parameters:  params,
 	}
 	schemas := append(rSchemas, bSchema)
-	return out, schemas
+	sec := map[string]securityScheme{}
+	if e.Auth != nil {
+		sec[e.Auth.Name] = securityScheme{Type: e.Auth.Type, Scheme: e.Auth.Scheme}
+		out.Security = []securityRequirement{
+			{e.Auth.Name: []string{}},
+		}
+	}
+	return out, schemas, sec
 }
 
 type parameter struct {
@@ -116,6 +124,10 @@ type parameter struct {
 	AllowEmptyValue bool   `json:"allowEmptyValue" yaml:"allowEmptyValue"`
 	Schema          schema `json:"schema" yaml:"schema"`
 }
+
+type securityRequirements []securityRequirement
+
+type securityRequirement map[string][]string
 
 type schema struct {
 	Type  string  `json:"type,omitempty" yaml:"type,omitempty"`
@@ -235,7 +247,10 @@ type components struct {
 
 type securitySchemes map[string]securityScheme
 
-type securityScheme struct{}
+type securityScheme struct {
+	Type   string `json:"type,omitempty" yaml:"type,omitempty"`
+	Scheme string `json:"scheme,omitempty" yaml:"scheme,omitempty"`
+}
 
 // https://apitools.dev/swagger-parser/online/
 // https://www.thecodebuzz.com/swagger-openapi-3-0-sample-json-example-jwt-basic-auth/

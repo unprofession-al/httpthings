@@ -79,11 +79,16 @@ func (r Routes) PopulateRouter(router *mux.Router) {
 		if f == nil {
 			f = notImplemented
 		}
+		injected := f(route.Endpoint)
+		if route.Endpoint.Auth != nil && route.Endpoint.Auth.MiddlewareWrapper != nil {
+			injected = route.Endpoint.Auth.MiddlewareWrapper(route.Endpoint, injected)
+		}
+
 		if strings.HasSuffix(path, "*/") {
 			path = strings.TrimSuffix(path, "*/")
-			router.PathPrefix(path).HandlerFunc(f(route.Endpoint)).Methods(route.Method)
+			router.PathPrefix(path).HandlerFunc(injected).Methods(route.Method)
 		} else {
-			router.Path(path).HandlerFunc(f(route.Endpoint)).Methods(route.Method)
+			router.Path(path).HandlerFunc(injected).Methods(route.Method)
 		}
 	}
 }
