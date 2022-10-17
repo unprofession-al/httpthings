@@ -10,11 +10,11 @@ If you like these things use them by copying the snippets needed to your repo. D
 THESE THINGS AS A REGULAR LIBRARY unless you are me. Because things will change and break
 your things.
 
-| Thing                                         | Description                                                               |
-| ---                                           | ---                                                                       |
-| github.com/unprofession-al/httpthings/respond | Easily write HTTP responses to the client                                 | 
-| github.com/unprofession-al/httpthings/route   | Set up self-documenting HTTP routes                                       | 
-| github.com/unprofession-al/httpthings/run     | Start a HTTP server that runs as a real server or in a serverless fashion |
+| Thing                                          | Description                                                                                    |
+| ---                                            | ---                                                                                            |
+| github.com/unprofession-al/httpthings/respond  | Easily write HTTP responses to the client                                                      | 
+| github.com/unprofession-al/httpthings/endpoint | In conjunction with `package openapi`, endpoint allows so setup a self-documenting http server | 
+| github.com/unprofession-al/httpthings/run      | Start a HTTP server that runs as a real server or in a server-less fashion                     |
 
 To see a thing than makes use of all the things, see [example](https://github.com/unprofession-al/httpthings/tree/master/example).
 

@@ -25,4 +25,7 @@ tasks:
       - go vet ./...
   lint:
     cmds:
-      - for i in $(find . -name '*.go' -printf '%h\n' | sort -u); do (cd $i && pwd && staticcheck ); done 
+      - for i in $(find . -name '*.go' -printf '%h\n' | sort -u); do (cd $i && pwd && staticcheck ); done
+  doc:
+    cmds:
+      - for i in $(find . -name '*.go' -printf '%h\n' | sort -u); do (cd $i && pwd && gomarkdoc --output README.md .); done > /dev/null

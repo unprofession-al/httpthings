@@ -10,12 +10,12 @@ import (
 )
 
 type Parameter struct {
-	Name        string   `json:"name" yaml:"name"`
-	Location    Location `json:"location" yaml:"location"`
-	Required    bool     `json:"required" yaml:"required"`
-	Default     string   `json:"default" yaml:"default"`
-	Description string   `json:"description" yaml:"description"`
-	Type        string   `json:"content" yaml:"content"`
+	Name        string            `json:"name" yaml:"name"`
+	Location    ParameterLocation `json:"location" yaml:"location"`
+	Required    bool              `json:"required" yaml:"required"`
+	Default     string            `json:"default" yaml:"default"`
+	Description string            `json:"description" yaml:"description"`
+	Type        string            `json:"content" yaml:"content"`
 }
 
 func (p Parameter) Get(r *http.Request) ([]string, bool) {
@@ -42,7 +42,7 @@ func (p Parameter) Get(r *http.Request) ([]string, bool) {
 			}
 		}
 		return []string{}, false
-	} else if p.Location == LocationQuery {
+	} else if p.Location == ParameterLocationQuery {
 		v, ok := r.URL.Query()[p.Name]
 		if !ok && p.Default != "" {
 			return []string{p.Default}, true
@@ -62,34 +62,36 @@ func (p Parameter) First(r *http.Request) (string, bool) {
 	return v[0], ok
 }
 
-type Location int
+// ParameterLocation is used to decribe where in a request a certain parameter
+// can be found.
+type ParameterLocation int
 
 const (
-	LocationQuery Location = Location(iota)
-	LocationHeader
-	LocationPath
-	LocationCookie
+	ParameterLocationQuery  ParameterLocation = ParameterLocation(iota) // parameter is located in the query string
+	ParameterLocationHeader                                             // parameter is located in the request header
+	ParameterLocationPath                                               // parameter is part of the request path
+	ParameterLocationCookie                                             // parameter is stored in a cookie
 )
 
-var locationText = map[Location]string{
-	LocationQuery:  "query",
-	LocationHeader: "header",
-	LocationPath:   "path",
-	LocationCookie: "cookie",
+var parameterLocationText = map[ParameterLocation]string{
+	ParameterLocationQuery:  "query",
+	ParameterLocationHeader: "header",
+	ParameterLocationPath:   "path",
+	ParameterLocationCookie: "cookie",
 }
 
-func NewLocation(in string) Location {
+func NewLocation(in string) ParameterLocation {
 	in = strings.ToLower(in)
-	for m, text := range locationText {
+	for m, text := range parameterLocationText {
 		if text == in {
-			return Location(m)
+			return ParameterLocation(m)
 		}
 	}
-	return LocationQuery
+	return ParameterLocationQuery
 }
 
 // String returns a string representation of the mode.
-func (l Location) String() string {
+func (l ParameterLocation) String() string {
 	return locationText[l]
 }
 
