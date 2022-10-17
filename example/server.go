@@ -5,53 +5,50 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/justinas/alice"
+	"github.com/rs/cors"
+	"github.com/unprofession-al/httpthings/endpoint"
 	"github.com/unprofession-al/httpthings/openapi"
-	"github.com/unprofession-al/httpthings/route"
 	"github.com/unprofession-al/httpthings/run"
 )
 
 type Server struct {
 	listener string
-	base     string
-	handler  *mux.Router
+	handler  http.Handler
 	todos    TodoSet
-	spec     openapi.Spec
+	spec     openapi.OpenAPI
+	auth     *endpoint.Auth
 }
 
 func NewServer(listener, static string) (Server, error) {
-	ts := NewTodoSet()
-	// Populate some initial tasks
-	ts.Add(&Todo{
-		Name:        "Task1",
-		Description: "The First Task",
-	})
-	ts.Add(&Todo{
-		Name:        "Task2",
-		Description: "The Second Task",
-	})
-
+	basicAuth := &endpoint.Auth{
+		Name:               "BasicAuth",
+		Type:               "http",
+		Scheme:             "basic",
+		MiddlewareInjector: WrapBasicAuth,
+	}
 	s := Server{
 		listener: listener,
-		todos:    *ts,
-		base:     "api/v1",
+		todos:    *(NewTodoSet().Prepopulate()),
+		auth:     basicAuth,
 	}
+
+	endpoints := &endpoint.Endpoints{}
+	endpoints.Add("/api/v1/todos/", http.MethodGet, s.ListTodoEndpoint())
+	endpoints.Add("/api/v1/todos/", http.MethodPost, s.AddTodoEndpoint())
+	endpoints.Add("/api/v1/todos/{name | Name of the todo}/", http.MethodGet, s.ShowTodoEndpoint())
+	endpoints.Add("/api/v1/todos/{name | Name of the todo}/", http.MethodPut, s.FinishTodoEndpoint())
 
 	r := mux.NewRouter()
-
-	routes, err := route.NewRoutes(s.routeConfig(), s.base)
-	if err != nil {
-		return s, err
-	}
-	routes.PopulateRouter(r)
-
-	if static != "" {
-		r.PathPrefix("/").Handler(http.FileServer(http.Dir(static)))
-	}
-
-	s.GenerateOpenAPI(routes)
+	endpoints.PopulateRouter(r)
+	s.spec = openapi.FromEndpoints(*endpoints)
+	s.spec.OpenAPI = "3.0.3"
+	s.spec.Info.Version = "v1"
+	s.spec.Info.Title = "Todo API"
+	s.spec.Servers = []openapi.Server{{URL: fmt.Sprintf("http://%s", listener)}}
 	r.Path("/openapi.json").HandlerFunc(s.spec.HandleHTTP)
-
-	s.handler = r
+	r.Path("/openapi.yaml").HandlerFunc(s.spec.HandleHTTP)
+	s.handler = alice.New(cors.Default().Handler).Then(r)
 	return s, nil
 }
 
@@ -60,20 +57,4 @@ func (s *Server) run() {
 	if err != nil {
 		fmt.Println(err)
 	}
-}
-
-func (s *Server) GenerateOpenAPI(r route.Routes) {
-	c := openapi.Config{
-		Title:          "Todo API Service",
-		Version:        "v1",
-		Description:    "Todo API service is an example project of github.com/unprofession-al/httpthings",
-		TermsOfService: "https://very.unprofession.al/termsOfService",
-		ContactName:    "unprofession.al",
-		ContactURL:     "https://very.unprofession.al/",
-		ContactEmail:   "noreply@unprofession.al",
-		LicenseName:    "The MIT License",
-		LicenseURL:     "https://mit-license.org/",
-		ServerURL:      fmt.Sprintf("http://%s", s.listener),
-	}
-	s.spec = openapi.New(c, r, s.base)
 }

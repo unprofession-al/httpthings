@@ -7,6 +7,8 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/invopop/jsonschema v0.6.0
 	github.com/invopop/yaml v0.2.0
+	github.com/justinas/alice v1.2.0
+	github.com/rs/cors v1.8.2
 	gopkg.in/yaml.v3 v3.0.1
 )
 

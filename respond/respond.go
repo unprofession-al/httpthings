@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"gopkg.in/yaml.v3"
+	"github.com/invopop/yaml"
 )
 
 const (

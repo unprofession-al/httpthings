@@ -2,65 +2,51 @@ package openapi
 
 import (
 	"fmt"
+	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/invopop/jsonschema"
-	"github.com/unprofession-al/httpthings/route"
+	"github.com/unprofession-al/httpthings/endpoint"
 )
 
-type Config struct {
-	Title             string
-	Version           string
-	Description       string
-	TermsOfService    string
-	ContactName       string
-	ContactURL        string
-	ContactEmail      string
-	LicenseName       string
-	LicenseURL        string
-	ServerURL         string
-	ServerDescription string
-}
-
-func New(c Config, r route.Routes, base string) Spec {
-	spec := Spec{
-		OpenAPI: "3.0.3",
-		Info: info{
-			Title:          c.Title,
-			Version:        c.Version,
-			Description:    c.Description,
-			TermsOfService: c.TermsOfService,
-			Contact: contact{
-				Name:  c.ContactName,
-				URL:   c.ContactURL,
-				Email: c.ContactEmail,
-			},
-			License: license{
-				Name: c.LicenseName,
-				URL:  c.LicenseURL,
-			},
-		},
-		Paths: paths{},
-		Servers: []server{
-			{
-				URL:         c.ServerURL,
-				Description: c.ServerDescription,
-			},
-		},
+func FromEndpoints(col endpoint.Endpoints) OpenAPI {
+	spec := OpenAPI{
+		Paths: Paths{},
 	}
 	schemas := []*jsonschema.Schema{}
-	secSchemes := map[string]securityScheme{}
-	for _, route := range r {
-		if _, ok := spec.Paths[route.Path]; !ok {
-			spec.Paths[route.Path] = endpoints{}
+	secSchemes := map[string]SecurityScheme{}
+	for caller, endpoint := range col {
+		if endpoint.Hidden {
+			continue
 		}
-		var epSchemas []*jsonschema.Schema
-		var secScheme map[string]securityScheme
-		spec.Paths[route.Path][strings.ToLower(route.Method)], epSchemas, secScheme = newEndpoint(route.Endpoint)
+		path, ok := spec.Paths[caller.Path]
+		if !ok {
+			path = PathItem{}
+		}
+		o, epSchemas, secScheme := newOperation(endpoint, endpoint.Tags...)
+		switch strings.ToUpper(caller.Method) {
+		case http.MethodGet:
+			path.Get = o
+		case http.MethodPut:
+			path.Put = o
+		case http.MethodPost:
+			path.Post = o
+		case http.MethodDelete:
+			path.Delete = o
+		case http.MethodOptions:
+			path.Options = o
+		case http.MethodHead:
+			path.Head = o
+		case http.MethodPatch:
+			path.Patch = o
+		case http.MethodTrace:
+			path.Trace = o
+		}
+		spec.Paths[caller.Path] = path
 		schemas = append(schemas, epSchemas...)
 		for k, v := range secScheme {
 			secSchemes[k] = v
-			fmt.Printf("name: %s, val: %v\n", k, v)
 		}
 	}
 	defs := jsonschema.Definitions{}
@@ -75,4 +61,124 @@ func New(c Config, r route.Routes, base string) Spec {
 	spec.Components.Schemas = defs
 	spec.Components.SecuritySchemes = secSchemes
 	return spec
+}
+
+func newOperation(e *endpoint.Endpoint, tags ...string) (*Operation, []*jsonschema.Schema, SecuritySchemes) {
+	params := []Parameter{}
+	for _, p := range e.Parameters {
+		param := Parameter{
+			Name:        p.Name,
+			In:          p.Location.String(),
+			Description: p.Description,
+			Required:    true,
+			Schema:      Schema{Type: p.Type},
+		}
+		params = append(params, param)
+	}
+	body, bSchema := newRequest(e.RequestBody)
+	responses, rSchemas := newResponses(e.Responses)
+	out := &Operation{
+		Summary:     e.Name,
+		Description: e.Description,
+		OperationID: e.Description,
+		Responses:   responses,
+		RequestBody: body,
+		Parameters:  params,
+		Tags:        tags,
+	}
+	schemas := append(rSchemas, bSchema)
+	sec := map[string]SecurityScheme{}
+	if e.Auth != nil {
+		sec[e.Auth.Name] = SecurityScheme{Type: e.Auth.Type, Scheme: e.Auth.Scheme}
+		out.Security = []SecurityRequirement{
+			{e.Auth.Name: []string{}},
+		}
+	}
+	return out, schemas, sec
+}
+
+func newSchema(t string, v interface{}) Schema {
+	array := reflect.TypeOf(v).Kind() == reflect.Slice
+	out := &Schema{}
+	fill := out
+	if array {
+		out.Type = "array"
+		out.Items = &Schema{}
+		fill = out.Items
+	}
+	switch t {
+	case "bool":
+		fill.Type = "boolean"
+	case "string":
+		fill.Type = t
+	case "integer":
+		fill.Type = t
+	default:
+		fill.Ref = t
+	}
+
+	return *out
+}
+
+func newResponses(in map[int]interface{}) (Responses, []*jsonschema.Schema) {
+	out := Responses{}
+	schemas := []*jsonschema.Schema{}
+
+	if len(in) == 0 {
+		code := http.StatusOK
+		resp, schema := newResponse(code, "")
+		schemas = append(schemas, schema)
+		out[fmt.Sprint(code)] = *resp
+	}
+	for code, data := range in {
+		resp, schema := newResponse(code, data)
+		schemas = append(schemas, schema)
+		out[fmt.Sprint(code)] = *resp
+	}
+	return out, schemas
+}
+
+func newResponse(code int, in interface{}) (*Response, *jsonschema.Schema) {
+	if in == nil {
+		return nil, nil
+	}
+	schema := jsonschema.Reflect(in)
+	nameTokens := strings.SplitN(reflect.TypeOf(in).String(), ".", 2)
+	var reference string
+	if len(nameTokens) < 2 {
+		reference = nameTokens[0]
+	} else {
+		reference = fmt.Sprintf("#/components/schemas/%s", nameTokens[1])
+	}
+	resp := &Response{
+		Description: statusText(code),
+		Content: Content{
+			"application/json": {
+				Schema: newSchema(reference, in),
+			},
+		},
+	}
+	return resp, schema
+}
+
+func newRequest(in interface{}) (*Request, *jsonschema.Schema) {
+	if in == nil {
+		return nil, nil
+	}
+	schema := jsonschema.Reflect(in)
+	nameTokens := strings.SplitN(reflect.TypeOf(in).String(), ".", 2)
+	var reference string
+	if len(nameTokens) < 2 {
+		reference = nameTokens[0]
+	} else {
+		reference = fmt.Sprintf("#/components/schemas/%s", nameTokens[1])
+	}
+	req := &Request{
+		Content: Content{
+			"application/json": {
+				Schema: newSchema(reference, in),
+			},
+		},
+	}
+	return req, schema
 }

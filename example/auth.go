@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/unprofession-al/httpthings/route"
+	"github.com/unprofession-al/httpthings/endpoint"
 )
 
-func WrapBasicAuth(e route.Endpoint, hf http.HandlerFunc) http.HandlerFunc {
+func WrapBasicAuth(e endpoint.Endpoint, hf http.HandlerFunc) http.HandlerFunc {
 	return BasicAuth(hf)
 }
 

@@ -6,6 +6,12 @@ func NewTodoSet() *TodoSet {
 	return &TodoSet{}
 }
 
+func (ts *TodoSet) Prepopulate() *TodoSet {
+	ts.Add(&Todo{Name: "Task1"})
+	ts.Add(&Todo{Name: "Task2"})
+	return ts
+}
+
 func (ts TodoSet) AsSlice() []*Todo {
 	out := []*Todo{}
 	for _, v := range ts {

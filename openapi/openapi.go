@@ -3,259 +3,160 @@ package openapi
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"reflect"
 	"strings"
 
 	"github.com/invopop/jsonschema"
-	"github.com/invopop/yaml"
 	"github.com/unprofession-al/httpthings/respond"
-	"github.com/unprofession-al/httpthings/route"
 )
 
-type Spec struct {
-	OpenAPI    string      `json:"openapi" yaml:"openapi"`
-	Info       info        `json:"info" yaml:"info"`
-	Servers    []server    `json:"servers,omitempty" yaml:"servers,omitempty"`
-	Paths      paths       `json:"paths" yaml:"paths"`
-	Components components  `json:"components" yaml:"components"`
-	Tags       []tagObject `json:"tags,omitempty" yaml:"tags,omitempty"`
+type OpenAPI struct {
+	OpenAPI      string                `json:"openapi" yaml:"openapi"`
+	Info         Info                  `json:"info" yaml:"info"`
+	Servers      []Server              `json:"servers,omitempty" yaml:"servers,omitempty"`
+	Paths        Paths                 `json:"paths" yaml:"paths"`
+	Components   Components            `json:"components,omitempty" yaml:"components,omitEmpty"`
+	Tags         []Tag                 `json:"tags,omitempty" yaml:"tags,omitempty"`
+	ExternalDocs ExternalDocumentation `json:"externalDocs,omitempty" yaml:"externalDocs,omitempty"`
 }
 
-func (s *Spec) HandleHTTP(w http.ResponseWriter, r *http.Request) {
-	headers := map[string]string{
-		"Access-Control-Allow-Origin": "*",
-	}
-	if strings.HasSuffix(r.URL.Path, ".yaml") ||
-		strings.HasSuffix(r.URL.Path, ".yml") {
-		b, _ := yaml.Marshal(s)
-		headers["Content-Type"] = respond.ContentTypeYAML
-		respond.Raw(w, http.StatusOK, b, headers)
+func (oapi *OpenAPI) HandleHTTP(w http.ResponseWriter, r *http.Request) {
+	if strings.HasSuffix(r.URL.Path, ".yaml") || strings.HasSuffix(r.URL.Path, ".yml") {
+		respond.YAML(w, http.StatusOK, oapi)
 	} else {
-		respond.JSON(w, http.StatusOK, s, headers)
+		respond.JSON(w, http.StatusOK, oapi)
 	}
 }
 
-func (s *Spec) MarshalJSON() ([]byte, error) {
-	type Alias Spec
-	raw, err := json.MarshalIndent((*Alias)(s), "", "    ")
+func (oapi *OpenAPI) MarshalJSON() ([]byte, error) {
+	type alias OpenAPI
+	raw, err := json.MarshalIndent((*alias)(oapi), "", "    ")
 	out := bytes.ReplaceAll(raw, []byte("#/$defs/"), []byte("#/components/schemas/"))
 	return out, err
 }
 
-type tagObject struct {
-	Name        string `json:"name" yaml:"name"`
-	Description string `json:"description" yaml:"description"`
+type Tag struct {
+	Name         string                `json:"name" yaml:"name"`
+	Description  string                `json:"description,omitempty" yaml:"description,omitempty"`
+	ExternalDocs ExternalDocumentation `json:"externalDocs,omitempty" yaml:"externalDocs,omitempty"`
 }
 
-type info struct {
+type ExternalDocumentation struct {
+	Description string `json:"description,omitempty" yaml:"description,omitempty"`
+	URL         string `json:"url" yaml:"url"`
+}
+
+type Info struct {
 	Title          string  `json:"title" yaml:"title"`
-	Description    string  `json:"description" yaml:"description"`
-	TermsOfService string  `json:"termsOfService" yaml:"termsOfService"`
-	Contact        contact `json:"contact" yaml:"contact"`
-	License        license `json:"license" yaml:"license"`
+	Description    string  `json:"description,omitempty" yaml:"description,omitempty"`
+	TermsOfService string  `json:"termsOfService,omitempty" yaml:"termsOfService,omitempty"`
+	Contact        Contact `json:"contact,omitempty" yaml:"contact,omitempty"`
+	License        License `json:"license,omitempty" yaml:"license,omitempty"`
 	Version        string  `json:"version" yaml:"version"`
 }
 
-type contact struct {
-	Name  string `json:"name" yaml:"name"`
-	URL   string `json:"url" yaml:"url"`
-	Email string `json:"email" yaml:"email"`
+type Contact struct {
+	Name  string `json:"name,omitempty" yaml:"name,omitempty"`
+	URL   string `json:"url,omitempty" yaml:"url,omitempty"`
+	Email string `json:"email,omitempty" yaml:"email,omitempty"`
 }
 
-type license struct {
+type License struct {
 	Name string `json:"name" yaml:"name"`
-	URL  string `json:"url" yaml:"url"`
+	URL  string `json:"url,omitempty" yaml:"url,omitempty"`
 }
 
-type server struct {
-	URL         string `json:"url" yaml:"url"`
-	Description string `json:"description,omitempty" yaml:"description,omitempty"`
-	// Variables serverVariablen
+type Server struct {
+	URL         string                     `json:"url" yaml:"url"`
+	Description string                     `json:"description,omitempty" yaml:"description,omitempty"`
+	Variables   map[string]ServerVariables `json:"variables,omitempty" yaml:"variables,omitempty"`
 }
 
-type paths map[string]endpoints
-
-type endpoints map[string]endpoint
-
-type endpoint struct {
-	Summary     string               `json:"summary,omitempty" yaml:"summary,omitempty"`
-	OperationID string               `json:"operationId,omitempty" yaml:"operationId,omitempty"`
-	Description string               `json:"description,omitempty" yaml:"description,omitempty"`
-	Tags        []string             `json:"tags,omitempty" yaml:"tags,omitempty"`
-	RequestBody *request             `json:"requestBody,omitempty" yaml:"requestBody,omitempty"`
-	Responses   map[string]response  `json:"responses" yaml:"responses"`
-	Parameters  []parameter          `json:"parameters,omitempty" yaml:"parameters,omitempty"`
-	Security    securityRequirements `json:"security,omitempty" yaml:"security,omitempty"`
+type ServerVariables struct {
+	Enum        []string `json:"enum" yaml:"enum"`
+	Default     string   `json:"default" yaml:"default"`
+	Description string   `json:"description,omitempty" yaml:"description,omitempty"`
 }
 
-func newEndpoint(e route.Endpoint) (endpoint, []*jsonschema.Schema, map[string]securityScheme) {
-	params := []parameter{}
-	for _, p := range e.Parameters {
-		param := parameter{
-			Name:        p.Name,
-			In:          p.Location.String(),
-			Description: p.Description,
-			Required:    true,
-			Schema:      schema{Type: p.Type},
-		}
-		params = append(params, param)
-	}
-	body, bSchema := newRequest(e.RequestBody)
-	responses, rSchemas := newResponses(e.Responses)
-	out := endpoint{
-		Summary:     e.Name,
-		Description: e.Description,
-		OperationID: e.Description,
-		Responses:   responses,
-		RequestBody: body,
-		Parameters:  params,
-	}
-	schemas := append(rSchemas, bSchema)
-	sec := map[string]securityScheme{}
-	if e.Auth != nil {
-		sec[e.Auth.Name] = securityScheme{Type: e.Auth.Type, Scheme: e.Auth.Scheme}
-		out.Security = []securityRequirement{
-			{e.Auth.Name: []string{}},
-		}
-	}
-	return out, schemas, sec
+type Paths map[string]PathItem
+
+type PathItem struct {
+	Ref         string      `json:"$ref,omitempty" yaml:"$ref,omitempty"`
+	Summary     string      `json:"summary,omitempty" yaml:"summary,omitempty"`
+	Description string      `json:"description,omitempty" yaml:"description,omitempty"`
+	Get         *Operation  `json:"get,omitempty" yaml:"get,omitempty"`
+	Put         *Operation  `json:"put,omitempty" yaml:"put,omitempty"`
+	Post        *Operation  `json:"post,omitempty" yaml:"post,omitempty"`
+	Delete      *Operation  `json:"delete,omitempty" yaml:"delete,omitempty"`
+	Options     *Operation  `json:"options,omitempty" yaml:"options,omitempty"`
+	Head        *Operation  `json:"head,omitempty" yaml:"head,omitempty"`
+	Patch       *Operation  `json:"patch,omitempty" yaml:"patch,omitempty"`
+	Trace       *Operation  `json:"trace,omitempty" yaml:"trace,omitempty"`
+	Servers     []Server    `json:"servers,omitempty" yaml:"servers,omitempty"`
+	Parameters  []Parameter `json:"parameters,omitempty" yaml:"parameters,omitempty"`
 }
 
-type parameter struct {
+type Operation struct {
+	Tags         []string              `json:"tags,omitempty" yaml:"tags,omitempty"`
+	Summary      string                `json:"summary,omitempty" yaml:"summary,omitempty"`
+	Description  string                `json:"description,omitempty" yaml:"description,omitempty"`
+	ExternalDocs ExternalDocumentation `json:"externalDocs,omitempty" yaml:"externalDocs,omitempty"`
+	OperationID  string                `json:"operationId,omitempty" yaml:"operationId,omitempty"`
+	Parameters   []Parameter           `json:"parameters,omitempty" yaml:"parameters,omitempty"`
+	RequestBody  *Request              `json:"requestBody,omitempty" yaml:"requestBody,omitempty"`
+	Responses    map[string]Response   `json:"responses" yaml:"responses"`
+	Deprecated   bool                  `json:"deprecated" yaml:"deprecated"`
+	Security     SecurityRequirements  `json:"security,omitempty" yaml:"security,omitempty"`
+	Servers      []Server              `json:"servers,omitempty" yaml:"servers,omitempty"`
+}
+
+type Parameter struct {
 	Name            string `json:"name" yaml:"name"`
 	In              string `json:"in" yaml:"in"`
 	Description     string `json:"description" yaml:"description"`
 	Required        bool   `json:"required" yaml:"required"`
 	Deprecated      bool   `json:"deprecated" yaml:"deprecated"`
 	AllowEmptyValue bool   `json:"allowEmptyValue" yaml:"allowEmptyValue"`
-	Schema          schema `json:"schema" yaml:"schema"`
+	Schema          Schema `json:"schema" yaml:"schema"`
 }
 
-type securityRequirements []securityRequirement
+type SecurityRequirements []SecurityRequirement
 
-type securityRequirement map[string][]string
+type SecurityRequirement map[string][]string
 
-type schema struct {
+type Schema struct {
 	Type  string  `json:"type,omitempty" yaml:"type,omitempty"`
 	Ref   string  `json:"$ref,omitempty" yaml:"$ref,omitempty"`
-	Items *schema `json:"items,omitempty" yaml:"items,omitempty"`
+	Items *Schema `json:"items,omitempty" yaml:"items,omitempty"`
 }
 
-func newSchema(t string, v interface{}) schema {
-	array := reflect.TypeOf(v).Kind() == reflect.Slice
-	out := &schema{}
-	fill := out
-	if array {
-		out.Type = "array"
-		out.Items = &schema{}
-		fill = out.Items
-	}
-	switch t {
-	case "bool":
-		fill.Type = "boolean"
-	case "string":
-		fill.Type = t
-	case "integer":
-		fill.Type = t
-	default:
-		fill.Ref = t
-	}
+type Responses map[string]Response
 
-	return *out
-}
-
-type responses map[string]response
-
-func newResponses(in map[int]interface{}) (responses, []*jsonschema.Schema) {
-	out := responses{}
-	schemas := []*jsonschema.Schema{}
-
-	if len(in) == 0 {
-		code := http.StatusOK
-		resp, schema := newResponse(code, "")
-		schemas = append(schemas, schema)
-		out[fmt.Sprint(code)] = *resp
-	}
-	for code, data := range in {
-		resp, schema := newResponse(code, data)
-		schemas = append(schemas, schema)
-		out[fmt.Sprint(code)] = *resp
-	}
-	return out, schemas
-}
-
-type response struct {
+type Response struct {
 	Description string  `json:"description,omitempty" yaml:"description"`
-	Content     content `json:"content" yaml:"content"`
+	Content     Content `json:"content" yaml:"content"`
 }
 
-func newResponse(code int, in interface{}) (*response, *jsonschema.Schema) {
-	if in == nil {
-		return nil, nil
-	}
-	schema := jsonschema.Reflect(in)
-	nameTokens := strings.SplitN(reflect.TypeOf(in).String(), ".", 2)
-	var reference string
-	if len(nameTokens) < 2 {
-		reference = nameTokens[0]
-	} else {
-		reference = fmt.Sprintf("#/components/schemas/%s", nameTokens[1])
-	}
-	resp := &response{
-		Description: statusText(code),
-		Content: content{
-			"application/json": {
-				Schema: newSchema(reference, in),
-			},
-		},
-	}
-	return resp, schema
-}
-
-type request struct {
+type Request struct {
 	Description string  `json:"description,omitempty" yaml:"description"`
-	Content     content `json:"content" yaml:"content"`
+	Content     Content `json:"content" yaml:"content"`
 	Required    bool    `json:"required" yaml:"required"`
 }
 
-func newRequest(in interface{}) (*request, *jsonschema.Schema) {
-	if in == nil {
-		return nil, nil
-	}
-	schema := jsonschema.Reflect(in)
-	nameTokens := strings.SplitN(reflect.TypeOf(in).String(), ".", 2)
-	var reference string
-	if len(nameTokens) < 2 {
-		reference = nameTokens[0]
-	} else {
-		reference = fmt.Sprintf("#/components/schemas/%s", nameTokens[1])
-	}
-	req := &request{
-		Content: content{
-			"application/json": {
-				Schema: newSchema(reference, in),
-			},
-		},
-	}
-	return req, schema
+type Content map[string]SchemaDef
+
+type SchemaDef struct {
+	Schema Schema `json:"schema" yaml:"schema"`
 }
 
-type content map[string]schemaDef
-
-type schemaDef struct {
-	Schema schema `json:"schema" yaml:"schema"`
-}
-
-type components struct {
+type Components struct {
 	Schemas         jsonschema.Definitions `json:"schemas,omitempty" yaml:"schemas,omitempty"`
-	SecuritySchemes securitySchemes        `json:"securitySchemes,omitempty" yaml:"securitySchemes,omitempty"`
+	SecuritySchemes SecuritySchemes        `json:"securitySchemes,omitempty" yaml:"securitySchemes,omitempty"`
 }
 
-type securitySchemes map[string]securityScheme
+type SecuritySchemes map[string]SecurityScheme
 
-type securityScheme struct {
+type SecurityScheme struct {
 	Type   string `json:"type,omitempty" yaml:"type,omitempty"`
 	Scheme string `json:"scheme,omitempty" yaml:"scheme,omitempty"`
 }

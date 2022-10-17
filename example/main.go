@@ -13,7 +13,7 @@ type App struct {
 
 func main() {
 	var app App
-	flag.StringVar(&app.listener, "listener", "0.0.0.0:8765", "ip/port to listen on")
+	flag.StringVar(&app.listener, "listener", "127.0.0.1:8765", "ip/port to listen on")
 	flag.StringVar(&app.static, "static", "", "serve given dir as http root")
 	flag.Parse()
 

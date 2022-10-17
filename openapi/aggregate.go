@@ -5,20 +5,15 @@ import (
 	"reflect"
 )
 
-func AggregateSpec(base Spec, sources []Spec) (Spec, error) {
-	tags := []tagObject{}
+func AggregateSpec(base OpenAPI, sources []OpenAPI) (OpenAPI, error) {
+	tags := []Tag{}
 	for _, spec := range sources {
-		tags = append(tags, tagObject{Name: spec.Info.Title, Description: spec.Info.Description})
-		for path, eps := range spec.Paths {
-			if existing, exists := base.Paths[path]; exists && !reflect.DeepEqual(eps, existing) {
+		tags = append(tags, Tag{Name: spec.Info.Title, Description: spec.Info.Description})
+		for path, pathItem := range spec.Paths {
+			if existing, exists := base.Paths[path]; exists && !reflect.DeepEqual(pathItem, existing) {
 				return base, fmt.Errorf("path %s already exists, cannot overwrite", path)
 			}
-			tagged := endpoints{}
-			for verb, ep := range eps {
-				ep.Tags = append(ep.Tags, spec.Info.Title)
-				tagged[verb] = ep
-			}
-			base.Paths[path] = tagged
+			base.Paths[path] = appendTags(pathItem, spec.Info.Title)
 		}
 		for name, schema := range spec.Components.Schemas {
 			if existing, exists := base.Components.Schemas[name]; exists && !reflect.DeepEqual(schema, existing) {
@@ -26,7 +21,41 @@ func AggregateSpec(base Spec, sources []Spec) (Spec, error) {
 			}
 			base.Components.Schemas[name] = schema
 		}
+		for name, scheme := range spec.Components.SecuritySchemes {
+			if existing, exists := base.Components.SecuritySchemes[name]; exists && !reflect.DeepEqual(scheme, existing) {
+				return base, fmt.Errorf("security scheme %s already exists, cannot overwrite", name)
+			}
+			base.Components.SecuritySchemes[name] = scheme
+		}
 	}
 	base.Tags = tags
 	return base, nil
+}
+
+func appendTags(path PathItem, tag ...string) PathItem {
+	if path.Get != nil {
+		path.Get.Tags = append(path.Get.Tags, tag...)
+	}
+	if path.Put != nil {
+		path.Put.Tags = append(path.Put.Tags, tag...)
+	}
+	if path.Post != nil {
+		path.Post.Tags = append(path.Post.Tags, tag...)
+	}
+	if path.Delete != nil {
+		path.Delete.Tags = append(path.Delete.Tags, tag...)
+	}
+	if path.Options != nil {
+		path.Options.Tags = append(path.Options.Tags, tag...)
+	}
+	if path.Head != nil {
+		path.Head.Tags = append(path.Head.Tags, tag...)
+	}
+	if path.Patch != nil {
+		path.Patch.Tags = append(path.Patch.Tags, tag...)
+	}
+	if path.Trace != nil {
+		path.Trace.Tags = append(path.Trace.Tags, tag...)
+	}
+	return path
 }
