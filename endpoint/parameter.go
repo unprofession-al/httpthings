@@ -36,13 +36,13 @@ func (p Parameter) Get(r *http.Request) ([]string, bool) {
 		}
 		return []string{v}, true
 	} else if p.Location == ParameterLocationHeader {
-		v := r.Header.Get(p.Name)
-		if v == "" && p.Default != "" {
+		v := r.Header.Values(p.Name)
+		if len(v) < 1 && p.Default != "" {
 			return []string{p.Default}, true
-		} else if v == "" {
+		} else if len(v) < 1 {
 			return []string{}, false
 		}
-		return []string{v}, true
+		return v, true
 	} else if p.Location == ParameterLocationCookie {
 		for _, cookie := range r.Cookies() {
 			if cookie.Name == p.Name {
