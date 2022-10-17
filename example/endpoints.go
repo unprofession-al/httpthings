@@ -31,7 +31,7 @@ func (s Server) ShowTodoEndpoint() *endpoint.Endpoint {
 	ep.Auth = s.auth
 	ep.Handler = func(w http.ResponseWriter, r *http.Request) {
 		name, ok := ep.GetParamAsString("name", r)
-		if !ok || len(name) < 0 {
+		if !ok || len(name) < 1 {
 			errTodoNotProvided(w, r)
 			return
 		}
