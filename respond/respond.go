@@ -27,11 +27,11 @@ func Auto(res http.ResponseWriter, req *http.Request, code int, data interface{}
 	}
 }
 
-// YAML uses 'gopkg.in/yaml.v3' to render the data provided as a YAML document. Head to the
-// [official documentation] to learn about the available tags to by used on the struct to controll the
+// YAML uses 'github.com/invopop/yaml' to render the data provided as a YAML document. Head to the
+// [official documentation] to learn about the available tags to by used on the struct to control the
 // output.
 //
-// [official documentation]: https://pkg.go.dev/gopkg.in/yaml.v3
+// [official documentation]: https://github.com/invopop/yaml
 func YAML(res http.ResponseWriter, code int, data interface{}, headers ...map[string]string) error {
 	for k, v := range getHeaders(ContentTypeRaw, headers...) {
 		res.Header().Add(k, v)
@@ -46,7 +46,7 @@ func YAML(res http.ResponseWriter, code int, data interface{}, headers ...map[st
 }
 
 // JSON uses the standard library to render the data provided as a JSON document, consult the [docs]
-// to learn about on how to controll the resulting output.
+// to learn about on how to control the resulting output.
 //
 // [docs]: https://pkg.go.dev/encoding/json
 func JSON(res http.ResponseWriter, code int, data interface{}, headers ...map[string]string) error {

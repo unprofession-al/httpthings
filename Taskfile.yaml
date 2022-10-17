@@ -10,6 +10,7 @@ tasks:
       - task: coverage
       - task: vet
       - task: lint
+      - task: vuls
   test:
     cmds:
       - go test ./...
@@ -26,6 +27,9 @@ tasks:
   lint:
     cmds:
       - for i in $(find . -name '*.go' -printf '%h\n' | sort -u); do (cd $i && pwd && staticcheck ); done
+  vuls:
+    cmds:
+      - govulncheck ./...
   doc:
     cmds:
       - for i in $(find . -name '*.go' -printf '%h\n' | sort -u); do (cd $i && pwd && gomarkdoc --output README.md .); done > /dev/null

@@ -19,7 +19,7 @@ type Parameter struct {
 }
 
 func (p Parameter) Get(r *http.Request) ([]string, bool) {
-	if p.Location == LocationPath {
+	if p.Location == ParameterLocationPath {
 		v, ok := mux.Vars(r)[p.Name]
 		if !ok && p.Default != "" {
 			return []string{p.Default}, true
@@ -27,7 +27,7 @@ func (p Parameter) Get(r *http.Request) ([]string, bool) {
 			return []string{}, false
 		}
 		return []string{v}, true
-	} else if p.Location == LocationHeader {
+	} else if p.Location == ParameterLocationHeader {
 		v := r.Header.Get(p.Name)
 		if v == "" && p.Default != "" {
 			return []string{p.Default}, true
@@ -35,7 +35,7 @@ func (p Parameter) Get(r *http.Request) ([]string, bool) {
 			return []string{}, false
 		}
 		return []string{v}, true
-	} else if p.Location == LocationCookie {
+	} else if p.Location == ParameterLocationCookie {
 		for _, cookie := range r.Cookies() {
 			if cookie.Name == p.Name {
 				return []string{cookie.Value}, true
@@ -62,7 +62,7 @@ func (p Parameter) First(r *http.Request) (string, bool) {
 	return v[0], ok
 }
 
-// ParameterLocation is used to decribe where in a request a certain parameter
+// ParameterLocation is used to describe where in a request a certain parameter
 // can be found.
 type ParameterLocation int
 
@@ -92,7 +92,7 @@ func NewLocation(in string) ParameterLocation {
 
 // String returns a string representation of the mode.
 func (l ParameterLocation) String() string {
-	return locationText[l]
+	return parameterLocationText[l]
 }
 
 func extractPathParams(path string) (tidy string, params []Parameter) {
@@ -113,7 +113,7 @@ func extractPathParams(path string) (tidy string, params []Parameter) {
 		tidy = strings.ReplaceAll(tidy, whole, fmt.Sprintf("{%s}", key))
 		p := Parameter{
 			Name:        key,
-			Location:    LocationPath,
+			Location:    ParameterLocationPath,
 			Required:    true,
 			Default:     "",
 			Description: desc,
