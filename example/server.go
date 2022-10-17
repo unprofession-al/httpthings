@@ -16,7 +16,7 @@ type Server struct {
 	listener string
 	handler  http.Handler
 	todos    TodoSet
-	spec     openapi.OpenAPI
+	spec     openapi.Doc
 	auth     *endpoint.Auth
 }
 

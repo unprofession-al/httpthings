@@ -6,7 +6,7 @@
 import "github.com/unprofession-al/httpthings/run"
 ```
 
-Package run providies methods to easily start web servers
+Package run providies methods to easily start web servers as is or in a server\-less context
 
 ## Index
 

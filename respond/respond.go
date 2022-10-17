@@ -41,8 +41,8 @@ func YAML(res http.ResponseWriter, code int, data interface{}, headers ...map[st
 		return fmt.Errorf("failed to marshal to yaml: %w", err)
 	}
 	res.WriteHeader(code)
-	res.Write(out)
-	return nil
+	_, err = res.Write(out)
+	return err
 }
 
 // JSON uses the standard library to render the data provided as a JSON document, consult the [docs]
@@ -58,8 +58,8 @@ func JSON(res http.ResponseWriter, code int, data interface{}, headers ...map[st
 		return fmt.Errorf("failed to marshal to json: %w", err)
 	}
 	res.WriteHeader(code)
-	res.Write(out)
-	return nil
+	_, err = res.Write(out)
+	return err
 }
 
 // Raw writes plain bytes into the response and sets 'text/plain' as content type

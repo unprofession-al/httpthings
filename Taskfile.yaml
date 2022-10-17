@@ -11,6 +11,8 @@ tasks:
       - task: vet
       - task: lint
       - task: vuls
+      - task: misspell
+      - task: ineffassign
   test:
     cmds:
       - go test ./...
@@ -27,9 +29,15 @@ tasks:
   lint:
     cmds:
       - for i in $(find . -name '*.go' -printf '%h\n' | sort -u); do (cd $i && pwd && staticcheck ); done
+  misspell:
+    cmds:
+      - misspell ./...
   vuls:
     cmds:
       - govulncheck ./...
+  ineffassign:
+    cmds:
+      - ineffassign ./...
   doc:
     cmds:
       - for i in $(find . -name '*.go' -printf '%h\n' | sort -u); do (cd $i && pwd && gomarkdoc --output README.md .); done > /dev/null

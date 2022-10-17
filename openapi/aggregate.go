@@ -5,7 +5,8 @@ import (
 	"reflect"
 )
 
-func AggregateSpec(base OpenAPI, sources []OpenAPI) (OpenAPI, error) {
+// AggregateSpec takes a base [Doc] and expands this base with the content of all soucre [Doc]s.
+func AggregateOpenAPIDoc(base Doc, sources []Doc) (Doc, error) {
 	tags := []Tag{}
 	for _, spec := range sources {
 		tags = append(tags, Tag{Name: spec.Info.Title, Description: spec.Info.Description})

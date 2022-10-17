@@ -6,19 +6,25 @@
 import "github.com/unprofession-al/httpthings/openapi"
 ```
 
+Package openapi provides a "good enough" implementaion of the \[OpenAPI Specification\]. It allows to generate a valid OpenAPI Document from \[github.com/unprofession\-al/httpthings/endpoint.Endpoints\].
+
+Most frameworks take the approach to generate code from documentation. This package in conjunction with \[github.com/unprofession\-al/httpthings/endpoint\] takes a different approach and tries to generate the documentation from actual code while also tries to generate some handy benefits from the additional code written. See \[this discussion\] for a bunch of oppinions on the approaches to this topic.
+
+\[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md \[this discussion\]: https://github.com/go-kit/kit/issues/185
+
 ## Index
 
 - [type Components](<#type-components>)
 - [type Contact](<#type-contact>)
 - [type Content](<#type-content>)
+- [type Doc](<#type-doc>)
+  - [func AggregateOpenAPIDoc(base Doc, sources []Doc) (Doc, error)](<#func-aggregateopenapidoc>)
+  - [func FromEndpoints(col endpoint.Endpoints) Doc](<#func-fromendpoints>)
+  - [func (doc *Doc) HandleHTTP(w http.ResponseWriter, r *http.Request)](<#func-doc-handlehttp>)
+  - [func (doc *Doc) MarshalJSON() ([]byte, error)](<#func-doc-marshaljson>)
 - [type ExternalDocumentation](<#type-externaldocumentation>)
 - [type Info](<#type-info>)
 - [type License](<#type-license>)
-- [type OpenAPI](<#type-openapi>)
-  - [func AggregateSpec(base OpenAPI, sources []OpenAPI) (OpenAPI, error)](<#func-aggregatespec>)
-  - [func FromEndpoints(col endpoint.Endpoints) OpenAPI](<#func-fromendpoints>)
-  - [func (oapi *OpenAPI) HandleHTTP(w http.ResponseWriter, r *http.Request)](<#func-openapi-handlehttp>)
-  - [func (oapi *OpenAPI) MarshalJSON() ([]byte, error)](<#func-openapi-marshaljson>)
 - [type Operation](<#type-operation>)
 - [type Parameter](<#type-parameter>)
 - [type PathItem](<#type-pathitem>)
@@ -27,9 +33,7 @@ import "github.com/unprofession-al/httpthings/openapi"
 - [type Response](<#type-response>)
 - [type Responses](<#type-responses>)
 - [type Schema](<#type-schema>)
-- [type SchemaDef](<#type-schemadef>)
 - [type SecurityRequirement](<#type-securityrequirement>)
-- [type SecurityRequirements](<#type-securityrequirements>)
 - [type SecurityScheme](<#type-securityscheme>)
 - [type SecuritySchemes](<#type-securityschemes>)
 - [type Server](<#type-server>)
@@ -39,6 +43,10 @@ import "github.com/unprofession-al/httpthings/openapi"
 
 ## type Components
 
+Components represents a \[Components Object\] according to the \[OpenAPI Specification\].
+
+\[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md \[Components Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#componentsObject
+
 ```go
 type Components struct {
     Schemas         jsonschema.Definitions `json:"schemas,omitempty" yaml:"schemas,omitempty"`
@@ -47,6 +55,10 @@ type Components struct {
 ```
 
 ## type Contact
+
+Contact represents a \[Contact Object\] according to the \[OpenAPI Specification\].
+
+\[Contact Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#contactObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
 
 ```go
 type Contact struct {
@@ -58,11 +70,71 @@ type Contact struct {
 
 ## type Content
 
+Content represents the payload of a \[Request Object\] or a \[Response Object\] according to the \[OpenAPI Specification\].
+
+\[Response Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#responseObject \[Request Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#requestObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
+
 ```go
-type Content map[string]SchemaDef
+type Content map[string]schemaDef
 ```
 
+## type Doc
+
+Doc represents an \[OpenAPI Document\] according to the \[OpenAPI Specification\].
+
+\[OpenAPI Document\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#oasDocument \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
+
+```go
+type Doc struct {
+    OpenAPI      string                `json:"openapi" yaml:"openapi"`
+    Info         Info                  `json:"info" yaml:"info"`
+    Servers      []Server              `json:"servers,omitempty" yaml:"servers,omitempty"`
+    Paths        Paths                 `json:"paths" yaml:"paths"`
+    Components   Components            `json:"components,omitempty" yaml:"components,omitEmpty"`
+    Tags         []Tag                 `json:"tags,omitempty" yaml:"tags,omitempty"`
+    ExternalDocs ExternalDocumentation `json:"externalDocs,omitempty" yaml:"externalDocs,omitempty"`
+}
+```
+
+### func AggregateOpenAPIDoc
+
+```go
+func AggregateOpenAPIDoc(base Doc, sources []Doc) (Doc, error)
+```
+
+AggregateSpec takes a base \[Doc\] and expands this base with the content of all soucre \[Doc\]s.
+
+### func FromEndpoints
+
+```go
+func FromEndpoints(col endpoint.Endpoints) Doc
+```
+
+FromEndpoints takes \[github.com/unprofession\-al/httpthings/endpoint.Endpoints\] and generated a \[Doc\] describing these endpoints.
+
+### func \(\*Doc\) HandleHTTP
+
+```go
+func (doc *Doc) HandleHTTP(w http.ResponseWriter, r *http.Request)
+```
+
+HandleHTTP renders a Doc as YAML or JSON, based on the ending of the requst path.
+
+### func \(\*Doc\) MarshalJSON
+
+```go
+func (doc *Doc) MarshalJSON() ([]byte, error)
+```
+
+MarshalJSON is a bit of a hack to ensure that refereces are set properly in the context of a OpenAPI Document. See \[this pull request\] for details.
+
+\[this pull request\]: https://github.com/invopop/jsonschema/pull/45\]
+
 ## type ExternalDocumentation
+
+ExternalDocumentation represents an \[External Documentation Object\] according to the \[OpenAPI Specification\].
+
+\[External Documentation Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#externalDocumentationObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
 
 ```go
 type ExternalDocumentation struct {
@@ -72,6 +144,10 @@ type ExternalDocumentation struct {
 ```
 
 ## type Info
+
+Info represents an \[Info Object\] according to the \[OpenAPI Specification\].
+
+\[Info Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#infoObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
 
 ```go
 type Info struct {
@@ -86,6 +162,10 @@ type Info struct {
 
 ## type License
 
+License represents a \[License Object\] according to the \[OpenAPI Specification\].
+
+\[License Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#licenseObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
+
 ```go
 type License struct {
     Name string `json:"name" yaml:"name"`
@@ -93,45 +173,11 @@ type License struct {
 }
 ```
 
-## type OpenAPI
-
-```go
-type OpenAPI struct {
-    OpenAPI      string                `json:"openapi" yaml:"openapi"`
-    Info         Info                  `json:"info" yaml:"info"`
-    Servers      []Server              `json:"servers,omitempty" yaml:"servers,omitempty"`
-    Paths        Paths                 `json:"paths" yaml:"paths"`
-    Components   Components            `json:"components,omitempty" yaml:"components,omitEmpty"`
-    Tags         []Tag                 `json:"tags,omitempty" yaml:"tags,omitempty"`
-    ExternalDocs ExternalDocumentation `json:"externalDocs,omitempty" yaml:"externalDocs,omitempty"`
-}
-```
-
-### func AggregateSpec
-
-```go
-func AggregateSpec(base OpenAPI, sources []OpenAPI) (OpenAPI, error)
-```
-
-### func FromEndpoints
-
-```go
-func FromEndpoints(col endpoint.Endpoints) OpenAPI
-```
-
-### func \(\*OpenAPI\) HandleHTTP
-
-```go
-func (oapi *OpenAPI) HandleHTTP(w http.ResponseWriter, r *http.Request)
-```
-
-### func \(\*OpenAPI\) MarshalJSON
-
-```go
-func (oapi *OpenAPI) MarshalJSON() ([]byte, error)
-```
-
 ## type Operation
+
+Operation represents an \[Operation Object\] according to the \[OpenAPI Specification\].
+
+\[Operation Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#operationObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
 
 ```go
 type Operation struct {
@@ -144,12 +190,16 @@ type Operation struct {
     RequestBody  *Request              `json:"requestBody,omitempty" yaml:"requestBody,omitempty"`
     Responses    map[string]Response   `json:"responses" yaml:"responses"`
     Deprecated   bool                  `json:"deprecated" yaml:"deprecated"`
-    Security     SecurityRequirements  `json:"security,omitempty" yaml:"security,omitempty"`
+    Security     []SecurityRequirement `json:"security,omitempty" yaml:"security,omitempty"`
     Servers      []Server              `json:"servers,omitempty" yaml:"servers,omitempty"`
 }
 ```
 
 ## type Parameter
+
+Parameter represents a \[Parameter Object\] according to the \[OpenAPI Specification\].
+
+\[Parameter Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#parameterObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
 
 ```go
 type Parameter struct {
@@ -164,6 +214,10 @@ type Parameter struct {
 ```
 
 ## type PathItem
+
+PathItem represents a \[Path Item Object\] according to the \[OpenAPI Specification\].
+
+\[Path Item Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#pathItemObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
 
 ```go
 type PathItem struct {
@@ -185,11 +239,19 @@ type PathItem struct {
 
 ## type Paths
 
+Paths represents a \[Paths Object\] according to the \[OpenAPI Specification\].
+
+\[Paths Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#pathsObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
+
 ```go
 type Paths map[string]PathItem
 ```
 
 ## type Request
+
+Request represents a \[Request Object\] according to the \[OpenAPI Specification\].
+
+\[Request Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#requestObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
 
 ```go
 type Request struct {
@@ -201,6 +263,10 @@ type Request struct {
 
 ## type Response
 
+Response represents a \[Response Object\] according to the \[OpenAPI Specification\].
+
+\[Response Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#responseObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
+
 ```go
 type Response struct {
     Description string  `json:"description,omitempty" yaml:"description"`
@@ -210,11 +276,19 @@ type Response struct {
 
 ## type Responses
 
+Responses represents a \[Responses Object\] according to the \[OpenAPI Specification\].
+
+\[Responses Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#responsesObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
+
 ```go
 type Responses map[string]Response
 ```
 
 ## type Schema
+
+Schema represents a \[Schema Object\] according to the \[OpenAPI Specification\].
+
+\[Schema Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#schemaObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
 
 ```go
 type Schema struct {
@@ -224,27 +298,21 @@ type Schema struct {
 }
 ```
 
-## type SchemaDef
-
-```go
-type SchemaDef struct {
-    Schema Schema `json:"schema" yaml:"schema"`
-}
-```
-
 ## type SecurityRequirement
+
+SecurityRequirement represents a \[Security Requirement Object\] according to the \[OpenAPI Specification\].
+
+\[Security Requirement Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#securityRequirementObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
 
 ```go
 type SecurityRequirement map[string][]string
 ```
 
-## type SecurityRequirements
-
-```go
-type SecurityRequirements []SecurityRequirement
-```
-
 ## type SecurityScheme
+
+SecurityScheme represents a \[Security Scheme Object\] according to the \[OpenAPI Specification\].
+
+\[Security Scheme Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#securitySchemeObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
 
 ```go
 type SecurityScheme struct {
@@ -255,11 +323,19 @@ type SecurityScheme struct {
 
 ## type SecuritySchemes
 
+SecuritySchemes is a map of \[Security Scheme Object\] according to the \[OpenAPI Specification\].
+
+\[Security Scheme Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#securitySchemeObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
+
 ```go
 type SecuritySchemes map[string]SecurityScheme
 ```
 
 ## type Server
+
+Server represents a \[Server Object\] according to the \[OpenAPI Specification\].
+
+\[Server Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#serverObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
 
 ```go
 type Server struct {
@@ -271,6 +347,10 @@ type Server struct {
 
 ## type ServerVariables
 
+Server represents a \[Server Variables Object\] according to the \[OpenAPI Specification\].
+
+\[Server Variables Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#serverVariablesObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
+
 ```go
 type ServerVariables struct {
     Enum        []string `json:"enum" yaml:"enum"`
@@ -280,6 +360,10 @@ type ServerVariables struct {
 ```
 
 ## type Tag
+
+Tag represents an \[Tag Object\] according to the \[OpenAPI Specification\].
+
+\[Tag Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#tagObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md
 
 ```go
 type Tag struct {

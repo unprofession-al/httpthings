@@ -10,8 +10,10 @@ import (
 	"github.com/unprofession-al/httpthings/endpoint"
 )
 
-func FromEndpoints(col endpoint.Endpoints) OpenAPI {
-	spec := OpenAPI{
+// FromEndpoints takes [github.com/unprofession-al/httpthings/endpoint.Endpoints] and
+// generated a [Doc] describing these endpoints.
+func FromEndpoints(col endpoint.Endpoints) Doc {
+	spec := Doc{
 		Paths: Paths{},
 	}
 	schemas := []*jsonschema.Schema{}

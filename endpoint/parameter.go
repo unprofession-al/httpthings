@@ -9,6 +9,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// Parameter represents the [Parameter Object] of the [OpenAPI Specification]. It also cames
+// with some handy functions to extrat the parameters from a [http.Request].
+//
+// [Parameter Object]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#parameterObject
+// [OpenAPI Specification]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#parameterObject
 type Parameter struct {
 	Name        string            `json:"name" yaml:"name"`
 	Location    ParameterLocation `json:"location" yaml:"location"`
@@ -18,6 +23,9 @@ type Parameter struct {
 	Type        string            `json:"content" yaml:"content"`
 }
 
+// Get returns values if a given [http.Request]. To do this it respects the
+// Location field of the parameter. If the parameter in not present in the request,
+// the Defalut will be returned.
 func (p Parameter) Get(r *http.Request) ([]string, bool) {
 	if p.Location == ParameterLocationPath {
 		v, ok := mux.Vars(r)[p.Name]
@@ -54,6 +62,8 @@ func (p Parameter) Get(r *http.Request) ([]string, bool) {
 	return []string{}, false
 }
 
+// First does the same as Get but only returns the first value
+// found.
 func (p Parameter) First(r *http.Request) (string, bool) {
 	v, ok := p.Get(r)
 	if len(v) == 0 {
@@ -78,16 +88,6 @@ var parameterLocationText = map[ParameterLocation]string{
 	ParameterLocationHeader: "header",
 	ParameterLocationPath:   "path",
 	ParameterLocationCookie: "cookie",
-}
-
-func NewLocation(in string) ParameterLocation {
-	in = strings.ToLower(in)
-	for m, text := range parameterLocationText {
-		if text == in {
-			return ParameterLocation(m)
-		}
-	}
-	return ParameterLocationQuery
 }
 
 // String returns a string representation of the mode.

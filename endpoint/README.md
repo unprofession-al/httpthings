@@ -6,7 +6,7 @@
 import "github.com/unprofession-al/httpthings/endpoint"
 ```
 
-Package endpoint is a small layer on top of \[github.com/gorilla/mux\] wich allows to define HTTP endpoints containing the handler function as well as some meta data. In conjunction with package \`openapi\` a set of endpoints can then be rendered as a JSON or YAML representation of the endpoints OpenAPI specification.
+Package endpoint is a small layer on top of \[github.com/gorilla/mux\] which allows to define HTTP endpoints containing the handler function as well as some meta data. In conjunction with package \`openapi\` a set of endpoints can then be rendered as a JSON or YAML representation of the endpoints OpenAPI specification.
 
 To make best use of the meta data provided package endpoint also tries to provide some functionality which attempts to make use of the meta data provided when implementing the handler itself.
 
@@ -27,11 +27,14 @@ To make best use of the meta data provided package endpoint also tries to provid
   - [func (p Parameter) First(r *http.Request) (string, bool)](<#func-parameter-first>)
   - [func (p Parameter) Get(r *http.Request) ([]string, bool)](<#func-parameter-get>)
 - [type ParameterLocation](<#type-parameterlocation>)
-  - [func NewLocation(in string) ParameterLocation](<#func-newlocation>)
   - [func (l ParameterLocation) String() string](<#func-parameterlocation-string>)
 
 
 ## type Auth
+
+Auth describes a \[Security Schemes\] according to the \[OpenAPI Specification\]. It can be then linked to an \[Endpoint\]. If a MiddlewareInjector is provided, \[Endpoint.PopulateRouter\] will wrap the Handler of the endpoint in the middleware.
+
+\[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md \[Security Schemes\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#componentsSecuritySchemes
 
 ```go
 type Auth struct {
@@ -44,11 +47,15 @@ type Auth struct {
 
 ## type AuthMiddlewareInjector
 
+AuthMiddlewareInjector is used to provide a middleware to the \[Auth\] struct. When populating the router, this function is called to wrap the handle func. Besides the \[http.HandlerFunc\] the AuthMiddlewareInjector function also takes the \[Endpoint\] itself as a parameter. This allows to make the middleware aware of the \[Endpoint\] it warps. This can be helpful if details of the endpoints are used in the auth process.
+
 ```go
 type AuthMiddlewareInjector func(Endpoint, http.HandlerFunc) http.HandlerFunc
 ```
 
 ## type Caller
+
+A Caller specifies how a \[http.Request\] is mapped to an \[Endpoint\] by using the request path and HTTP method.
 
 ```go
 type Caller struct {
@@ -58,18 +65,39 @@ type Caller struct {
 
 ## type Endpoint
 
+An Endpoint correlates pretty much with an \[Operation Object\] from the \[OpenAPI Specification\]. In addition to the meta data required by the \[Operation Object\] it also holds the \[http.HandlerFunc\] and provides some helpful mechanisms to work with HTTP errors as well as with the requests \[Parameter\]s.
+
+\[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md \[Operation Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#operationObject
+
 ```go
 type Endpoint struct {
-    Parameters    []Parameter
-    Name          string
-    Description   string
-    RequestBody   interface{}
-    Responses     map[int]interface{}
+    // Name of the endpoint
+    Name string
+    // Description can be used to provide more detailes on the endpoint
+    Description string
+    // Parameters which can be provided to this endpoint via request
+    Parameters []Parameter
+    // RequestBody can be used to provide an example of the request body type
+    // expected to be provided to this endpoint. When generating an OpenAPI Document
+    // This value is then used to generate the schema to describe the request body.
+    RequestBody interface{}
+    // Responses are similar to the RequestBody field, but for resposes. The keys of
+    // the map represent the HTTP status codes associated with the response.
+    // Usually it is sufficient to describe the success responses here and then use
+    // the RegisterError method for the bad exist cases.
+    Responses map[int]interface{}
+    // ErrorResponse can be used to provide a HTTP error 'template' in order to have
+    // consistent errors across the API.
     ErrorResponse ErrorResponse
-    Auth          *Auth
-    Handler       func(w http.ResponseWriter, r *http.Request)
-    Tags          []string
-    Hidden        bool
+    // Auth references the auth method used for this endpoint.
+    Auth *Auth
+    // Handler is the actual [http.HandlerFunc] executed when this endpoint is called
+    Handler http.HandlerFunc
+    // Tags map directly to the tags field of the Operation Object according to the
+    // OpenAPI Spec.
+    Tags []string
+    // Hidden prevents the endpoint from being represented in the OpenAPI document.
+    Hidden bool
 }
 ```
 
@@ -79,11 +107,15 @@ type Endpoint struct {
 func (e *Endpoint) GetParamAsInt(name string, r *http.Request) (int, bool)
 ```
 
+GetParamAsInt fetches a the specified parameter from wherever it is stored in the given request as an int. If the value is found, it is converted to an int and returned as the first return value and \`true\` as the second return value. If the value cannot be found or an error occures during conversion, \`0\` and \`false\` will be returned.
+
 ### func \(\*Endpoint\) GetParamAsString
 
 ```go
 func (e *Endpoint) GetParamAsString(name string, r *http.Request) (string, bool)
 ```
+
+GetParamAsString fetches a the specified parameter from wherever it is stored in the given request as a string. If the value is found, it is returned as the first return value and \`true\` as the second return value. If the value cannot be found \`false\` will be returned as second return value.
 
 ### func \(\*Endpoint\) RegisterError
 
@@ -91,7 +123,13 @@ func (e *Endpoint) GetParamAsString(name string, r *http.Request) (string, bool)
 func (e *Endpoint) RegisterError(status int, details string) http.HandlerFunc
 ```
 
+RegisterError takes a status code as well as some details on this error and registers a new \[Response\] to the \[Endpoint\]. As a result, a \[http.HandlerFunc\] is returned which can then be used to in the \[Endpoint\]s handler itself.
+
+Using these \[http.HandlerFunc\]s for Error handling in the handler function of the \[Endpoint\] is by no means neccessory but helps to ensure that all possible exit code are documented in the Responses map.
+
 ## type Endpoints
+
+Endpoints is a collection of references to an \[Endpoint\]. \[Caller\] is used to uniquely identify an \[Endpoint\]
 
 ```go
 type Endpoints map[Caller]*Endpoint
@@ -103,13 +141,19 @@ type Endpoints map[Caller]*Endpoint
 func (c *Endpoints) Add(path, method string, e *Endpoint) error
 ```
 
+Add appends an \[Endpoint\] to \[Endpoints\] at a given path and HTTP method.
+
 ### func \(\*Endpoints\) PopulateRouter
 
 ```go
 func (c *Endpoints) PopulateRouter(router *mux.Router)
 ```
 
+PopulateRouter takes a reference to a \[github.com/gorilla/mux.Router\] and attaches all endpoints to it.
+
 ## type ErrorResponse
+
+ErrorResponse in an interface that can be implemented to ensure that all HTTP errors returned by an API are structured in the same manner. This helps to ensure that the usage of the API is as easy as possible. The ErrorResponse is used by \[Endpoint.RegisterError\] to build the \[http.HandlerFunc\].
 
 ```go
 type ErrorResponse interface {
@@ -118,6 +162,10 @@ type ErrorResponse interface {
 ```
 
 ## type Parameter
+
+Parameter represents the \[Parameter Object\] of the \[OpenAPI Specification\]. It also cames with some handy functions to extrat the parameters from a \[http.Request\].
+
+\[Parameter Object\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#parameterObject \[OpenAPI Specification\]: https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#parameterObject
 
 ```go
 type Parameter struct {
@@ -136,15 +184,19 @@ type Parameter struct {
 func (p Parameter) First(r *http.Request) (string, bool)
 ```
 
+First does the same as Get but only returns the first value found.
+
 ### func \(Parameter\) Get
 
 ```go
 func (p Parameter) Get(r *http.Request) ([]string, bool)
 ```
 
+Get returns values if a given \[http.Request\]. To do this it respects the Location field of the parameter. If the parameter in not present in the request, the Defalut will be returned.
+
 ## type ParameterLocation
 
-ParameterLocation is used to decribe where in a request a certain parameter can be found.
+ParameterLocation is used to describe where in a request a certain parameter can be found.
 
 ```go
 type ParameterLocation int
@@ -157,12 +209,6 @@ const (
     ParameterLocationPath                                               // parameter is part of the request path
     ParameterLocationCookie                                             // parameter is stored in a cookie
 )
-```
-
-### func NewLocation
-
-```go
-func NewLocation(in string) ParameterLocation
 ```
 
 ### func \(ParameterLocation\) String

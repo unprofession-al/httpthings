@@ -41,7 +41,7 @@ Auto reads the 'accept' request header and tries to respond automatically with t
 func JSON(res http.ResponseWriter, code int, data interface{}, headers ...map[string]string) error
 ```
 
-JSON uses the standard library to render the data provided as a JSON document, consult the \[docs\] to learn about on how to controll the resulting output.
+JSON uses the standard library to render the data provided as a JSON document, consult the \[docs\] to learn about on how to control the resulting output.
 
 \[docs\]: https://pkg.go.dev/encoding/json
 
@@ -59,9 +59,9 @@ Raw writes plain bytes into the response and sets 'text/plain' as content type h
 func YAML(res http.ResponseWriter, code int, data interface{}, headers ...map[string]string) error
 ```
 
-YAML uses 'gopkg.in/yaml.v3' to render the data provided as a YAML document. Head to the \[official documentation\] to learn about the available tags to by used on the struct to controll the output.
+YAML uses 'github.com/invopop/yaml' to render the data provided as a YAML document. Head to the \[official documentation\] to learn about the available tags to by used on the struct to control the output.
 
-\[official documentation\]: https://pkg.go.dev/gopkg.in/yaml.v3
+\[official documentation\]: https://github.com/invopop/yaml
 
 
 

@@ -1,4 +1,5 @@
 [![GoDoc](https://godoc.org/github.com/unprofession-al/httpthings?status.svg)](https://godoc.org/github.com/unprofession-al/httpthings)
+[![Go Report Card](https://goreportcard.com/badge/github.com/unprofession-al/httpthings)](https://goreportcard.com/report/github.com/unprofession-al/httpthings)
 
 # httpthings
 
