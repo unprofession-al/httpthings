@@ -7,16 +7,14 @@ import (
 )
 
 func TestParameterGet(t *testing.T) {
-	cases := []struct {
-		name         string
+	cases := map[string]struct {
 		request      *http.Request
 		param        Parameter
 		expectedVals []string
 		expectedOK   bool
 	}{
-		{
-			name:    "Header preset once with no default",
-			request: &http.Request{Header: map[string][]string{"X-Test": {"foo"}}},
+		"Header preset once with default": {
+			request: requestWithHeaderParameters(nil, map[string][]string{"X-Test": {"foo"}}),
 			param: Parameter{
 				Name:     "X-Test",
 				Location: ParameterLocationHeader,
@@ -26,9 +24,8 @@ func TestParameterGet(t *testing.T) {
 			expectedVals: []string{"foo"},
 			expectedOK:   true,
 		},
-		{
-			name:    "Header preset once with no default",
-			request: &http.Request{Header: map[string][]string{"X-Test": {"foo"}}},
+		"Header preset once with no default": {
+			request: requestWithHeaderParameters(nil, map[string][]string{"X-Test": {"foo"}}),
 			param: Parameter{
 				Name:     "X-Test",
 				Location: ParameterLocationHeader,
@@ -37,9 +34,8 @@ func TestParameterGet(t *testing.T) {
 			expectedVals: []string{"foo"},
 			expectedOK:   true,
 		},
-		{
-			name:    "Header preset more than once with no default",
-			request: &http.Request{Header: map[string][]string{"X-Test": {"foo", "bar"}}},
+		"Header preset more than once with no default": {
+			request: requestWithHeaderParameters(nil, map[string][]string{"X-Test": {"foo", "bar"}}),
 			param: Parameter{
 				Name:     "X-Test",
 				Location: ParameterLocationHeader,
@@ -48,9 +44,8 @@ func TestParameterGet(t *testing.T) {
 			expectedVals: []string{"bar", "foo"},
 			expectedOK:   true,
 		},
-		{
-			name:    "Header preset more than once with default",
-			request: &http.Request{Header: map[string][]string{"X-Test": {"foo", "bar"}}},
+		"Header preset more than once with default": {
+			request: requestWithHeaderParameters(nil, map[string][]string{"X-Test": {"foo", "bar"}}),
 			param: Parameter{
 				Name:     "X-Test",
 				Location: ParameterLocationHeader,
@@ -60,9 +55,8 @@ func TestParameterGet(t *testing.T) {
 			expectedVals: []string{"bar", "foo"},
 			expectedOK:   true,
 		},
-		{
-			name:    "Header not preset with no default",
-			request: &http.Request{},
+		"Header not set with no default": {
+			request: requestWithNoParameters(),
 			param: Parameter{
 				Name:     "X-Test",
 				Location: ParameterLocationHeader,
@@ -71,9 +65,8 @@ func TestParameterGet(t *testing.T) {
 			expectedVals: []string{},
 			expectedOK:   false,
 		},
-		{
-			name:    "Header not preset with default",
-			request: &http.Request{},
+		"Header not set with default": {
+			request: requestWithNoParameters(),
 			param: Parameter{
 				Name:     "X-Test",
 				Location: ParameterLocationHeader,
@@ -83,9 +76,114 @@ func TestParameterGet(t *testing.T) {
 			expectedVals: []string{"bla"},
 			expectedOK:   true,
 		},
+		"Query set once with default": {
+			request: requestWithQueryParameters(nil, map[string][]string{"test": {"foo"}}),
+			param: Parameter{
+				Name:     "test",
+				Location: ParameterLocationQuery,
+				Default:  "bla",
+				Required: true,
+			},
+			expectedVals: []string{"foo"},
+			expectedOK:   true,
+		},
+		"Query set once default": {
+			request: requestWithQueryParameters(nil, map[string][]string{"test": {"foo"}}),
+			param: Parameter{
+				Name:     "test",
+				Location: ParameterLocationQuery,
+				Required: true,
+			},
+			expectedVals: []string{"foo"},
+			expectedOK:   true,
+		},
+		"Query set more than once with no default": {
+			request: requestWithQueryParameters(nil, map[string][]string{"test": {"foo", "bar"}}),
+			param: Parameter{
+				Name:     "test",
+				Location: ParameterLocationQuery,
+				Required: true,
+			},
+			expectedVals: []string{"bar", "foo"},
+			expectedOK:   true,
+		},
+		"Query set more than once with default": {
+			request: requestWithQueryParameters(nil, map[string][]string{"test": {"foo", "bar"}}),
+			param: Parameter{
+				Name:     "test",
+				Location: ParameterLocationQuery,
+				Default:  "bla",
+				Required: true,
+			},
+			expectedVals: []string{"bar", "foo"},
+			expectedOK:   true,
+		},
+		"Query not set with no default": {
+			request: requestWithNoParameters(),
+			param: Parameter{
+				Name:     "test",
+				Location: ParameterLocationQuery,
+				Required: true,
+			},
+			expectedVals: []string{},
+			expectedOK:   false,
+		},
+		"Query not set with default": {
+			request: requestWithNoParameters(),
+			param: Parameter{
+				Name:     "test",
+				Location: ParameterLocationQuery,
+				Default:  "bla",
+				Required: true,
+			},
+			expectedVals: []string{"bla"},
+			expectedOK:   true,
+		},
+		"Cookie set once with default": {
+			request: requestWithCookieParameters(nil, map[string]string{"test": "foo"}),
+			param: Parameter{
+				Name:     "test",
+				Location: ParameterLocationCookie,
+				Default:  "bla",
+				Required: true,
+			},
+			expectedVals: []string{"foo"},
+			expectedOK:   true,
+		},
+		"Cookie set once with no default": {
+			request: requestWithCookieParameters(nil, map[string]string{"test": "foo"}),
+			param: Parameter{
+				Name:     "test",
+				Location: ParameterLocationCookie,
+				Required: true,
+			},
+			expectedVals: []string{"foo"},
+			expectedOK:   true,
+		},
+		"Cookie not set with no default": {
+			request: requestWithNoParameters(),
+			param: Parameter{
+				Name:     "test",
+				Location: ParameterLocationCookie,
+				Required: true,
+			},
+			expectedVals: []string{},
+			expectedOK:   false,
+		},
+		"Cookie not set with default": {
+			request: requestWithNoParameters(),
+			param: Parameter{
+				Name:     "test",
+				Location: ParameterLocationCookie,
+				Default:  "bla",
+				Required: true,
+			},
+			expectedVals: []string{"bla"},
+			expectedOK:   true,
+		},
 	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
+	for k, c := range cases {
+		t.Run(k, func(t *testing.T) {
 			vals, ok := c.param.Get(c.request)
 			if ok != c.expectedOK {
 				t.Errorf("ok is not as expected, have %t, need %t", ok, c.expectedOK)
@@ -96,6 +194,44 @@ func TestParameterGet(t *testing.T) {
 
 		})
 	}
+}
+
+func requestWithNoParameters() *http.Request {
+	r, _ := http.NewRequest(http.MethodGet, "https://example.com/", nil)
+	return r
+}
+
+func requestWithCookieParameters(r *http.Request, p map[string]string) *http.Request {
+	if r == nil {
+		r = requestWithNoParameters()
+	}
+	for k, v := range p {
+		c := &http.Cookie{Name: k, Value: v}
+		r.AddCookie(c)
+	}
+	return r
+}
+
+func requestWithHeaderParameters(r *http.Request, p map[string][]string) *http.Request {
+	if r == nil {
+		r = requestWithNoParameters()
+	}
+	r.Header = p
+	return r
+}
+
+func requestWithQueryParameters(r *http.Request, p map[string][]string) *http.Request {
+	if r == nil {
+		r = requestWithNoParameters()
+	}
+	q := r.URL.Query()
+	for k, vals := range p {
+		for _, v := range vals {
+			q.Add(k, v)
+		}
+	}
+	r.URL.RawQuery = q.Encode()
+	return r
 }
 
 func equal(a, b []string) bool {

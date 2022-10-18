@@ -45,9 +45,12 @@ func (p Parameter) Get(r *http.Request) ([]string, bool) {
 		return v, true
 	} else if p.Location == ParameterLocationCookie {
 		for _, cookie := range r.Cookies() {
-			if cookie.Name == p.Name {
+			if cookie.Name == p.Name && cookie.Value != "" {
 				return []string{cookie.Value}, true
 			}
+		}
+		if p.Default != "" {
+			return []string{p.Default}, true
 		}
 		return []string{}, false
 	} else if p.Location == ParameterLocationQuery {

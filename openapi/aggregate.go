@@ -3,10 +3,21 @@ package openapi
 import (
 	"fmt"
 	"reflect"
+
+	"github.com/invopop/jsonschema"
 )
 
 // AggregateSpec takes a base [Doc] and expands this base with the content of all soucre [Doc]s.
 func AggregateOpenAPIDoc(base Doc, sources []Doc) (Doc, error) {
+	if base.Paths == nil {
+		base.Paths = map[string]PathItem{}
+	}
+	if base.Components.Schemas == nil {
+		base.Components.Schemas = jsonschema.Definitions{}
+	}
+	if base.Components.SecuritySchemes == nil {
+		base.Components.SecuritySchemes = SecuritySchemes{}
+	}
 	tags := []Tag{}
 	for _, spec := range sources {
 		tags = append(tags, Tag{Name: spec.Info.Title, Description: spec.Info.Description})
