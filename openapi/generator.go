@@ -12,43 +12,45 @@ import (
 
 // FromEndpoints takes [github.com/unprofession-al/httpthings/endpoint.Endpoints] and
 // generated a [Doc] describing these endpoints.
-func FromEndpoints(col endpoint.Endpoints) Doc {
+func FromEndpoints(groups ...endpoint.Endpoints) Doc {
 	spec := Doc{
 		Paths: Paths{},
 	}
 	schemas := []*jsonschema.Schema{}
 	secSchemes := map[string]SecurityScheme{}
-	for caller, endpoint := range col {
-		if endpoint.Hidden {
-			continue
-		}
-		path, ok := spec.Paths[caller.Path]
-		if !ok {
-			path = PathItem{}
-		}
-		o, epSchemas, secScheme := newOperation(endpoint, endpoint.Tags...)
-		switch strings.ToUpper(caller.Method) {
-		case http.MethodGet:
-			path.Get = o
-		case http.MethodPut:
-			path.Put = o
-		case http.MethodPost:
-			path.Post = o
-		case http.MethodDelete:
-			path.Delete = o
-		case http.MethodOptions:
-			path.Options = o
-		case http.MethodHead:
-			path.Head = o
-		case http.MethodPatch:
-			path.Patch = o
-		case http.MethodTrace:
-			path.Trace = o
-		}
-		spec.Paths[caller.Path] = path
-		schemas = append(schemas, epSchemas...)
-		for k, v := range secScheme {
-			secSchemes[k] = v
+	for _, group := range groups {
+		for caller, endpoint := range group {
+			if endpoint.Hidden {
+				continue
+			}
+			path, ok := spec.Paths[caller.Path]
+			if !ok {
+				path = PathItem{}
+			}
+			o, epSchemas, secScheme := newOperation(endpoint, endpoint.Tags...)
+			switch strings.ToUpper(caller.Method) {
+			case http.MethodGet:
+				path.Get = o
+			case http.MethodPut:
+				path.Put = o
+			case http.MethodPost:
+				path.Post = o
+			case http.MethodDelete:
+				path.Delete = o
+			case http.MethodOptions:
+				path.Options = o
+			case http.MethodHead:
+				path.Head = o
+			case http.MethodPatch:
+				path.Patch = o
+			case http.MethodTrace:
+				path.Trace = o
+			}
+			spec.Paths[caller.Path] = path
+			schemas = append(schemas, epSchemas...)
+			for k, v := range secScheme {
+				secSchemes[k] = v
+			}
 		}
 	}
 	defs := jsonschema.Definitions{}
